@@ -1,8 +1,0 @@
-import mongoose from "mongoose";
-import { HttpError } from "./httpErrors.js";
-export function parseObjectId(id, label = "id") {
-    if (!mongoose.isValidObjectId(id)) {
-        throw new HttpError(400, `Invalid ${label}`);
-    }
-    return new mongoose.Types.ObjectId(id);
-}
