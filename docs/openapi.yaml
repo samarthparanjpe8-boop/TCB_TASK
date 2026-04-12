@@ -1,0 +1,392 @@
+openapi: 3.1.0
+info:
+  title: Classroom Management API
+  version: 1.0.0
+  description: |
+    REST API for students, courses, enrollments, grades, and attendance.
+    All protected routes require `Authorization: Bearer <Supabase access_token>` (HS256 JWT).
+servers:
+  - url: http://127.0.0.1:4000
+    description: Local
+tags:
+  - name: Health
+  - name: Session
+  - name: Students
+  - name: Courses
+  - name: Enrollments
+  - name: Grades
+  - name: Attendance
+paths:
+  /api/v1/health:
+    get:
+      tags: [Health]
+      summary: Liveness check (no auth)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  service: { type: string }
+  /api/v1/me:
+    get:
+      tags: [Session]
+      summary: Current user profile (synced from Supabase JWT + MongoDB)
+      security: [bearerAuth]
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserMe" }
+        "401": { description: Unauthorized }
+  /api/v1/students:
+    get:
+      tags: [Students]
+      summary: List active students (teacher only)
+      security: [bearerAuth]
+      responses:
+        "200": { description: List }
+        "403": { description: Forbidden }
+    post:
+      tags: [Students]
+      summary: Create student profile by email (teacher only)
+      security: [bearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, displayName]
+              properties:
+                email: { type: string, format: email }
+                displayName: { type: string }
+      responses:
+        "201": { description: Created }
+        "403": { description: Forbidden }
+        "409": { description: Duplicate email }
+  /api/v1/students/{id}:
+    patch:
+      tags: [Students]
+      summary: Update student display name (teacher only)
+      security: [bearerAuth]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [displayName]
+              properties:
+                displayName: { type: string }
+      responses:
+        "200": { description: Updated }
+        "404": { description: Not found }
+    delete:
+      tags: [Students]
+      summary: Archive student (teacher only)
+      security: [bearerAuth]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Archived }
+  /api/v1/courses:
+    get:
+      tags: [Courses]
+      summary: Teacher lists own courses; student lists enrolled courses
+      security: [bearerAuth]
+      responses:
+        "200": { description: List }
+    post:
+      tags: [Courses]
+      summary: Create course (teacher only)
+      security: [bearerAuth]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, code]
+              properties:
+                title: { type: string }
+                code: { type: string }
+                description: { type: string }
+      responses:
+        "201": { description: Created }
+  /api/v1/courses/{courseId}:
+    get:
+      tags: [Courses]
+      summary: Course detail (teacher owner or enrolled student)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Course }
+        "403": { description: Forbidden }
+        "404": { description: Not found }
+    patch:
+      tags: [Courses]
+      summary: Update course (teacher owner)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                code: { type: string }
+                description: { type: string }
+      responses:
+        "200": { description: Updated }
+    delete:
+      tags: [Courses]
+      summary: Delete course and related enrollments/grades/attendance (teacher owner)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Deleted }
+  /api/v1/courses/{courseId}/enrollments:
+    get:
+      tags: [Enrollments]
+      summary: Teacher roster or student self enrollment row
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Roster or single enrollment }
+    post:
+      tags: [Enrollments]
+      summary: Enroll student (teacher only)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId]
+              properties:
+                studentId: { type: string }
+      responses:
+        "201": { description: Created }
+  /api/v1/courses/{courseId}/enrollments/{enrollmentId}:
+    delete:
+      tags: [Enrollments]
+      summary: Remove enrollment (teacher only)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: enrollmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Removed }
+  /api/v1/courses/{courseId}/grades:
+    get:
+      tags: [Grades]
+      summary: List grades for course (teacher all; student own)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: List }
+    post:
+      tags: [Grades]
+      summary: Add grade (teacher only)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId, assignmentName, score]
+              properties:
+                studentId: { type: string }
+                assignmentName: { type: string }
+                score: { type: number }
+                maxScore: { type: number, default: 100 }
+      responses:
+        "201": { description: Created }
+  /api/v1/courses/{courseId}/grades/{gradeId}:
+    patch:
+      tags: [Grades]
+      summary: Update grade (teacher only)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: gradeId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assignmentName: { type: string }
+                score: { type: number }
+                maxScore: { type: number }
+      responses:
+        "200": { description: Updated }
+    delete:
+      tags: [Grades]
+      summary: Soft-delete grade (teacher only)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: gradeId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Deleted }
+  /api/v1/courses/{courseId}/attendance:
+    get:
+      tags: [Attendance]
+      summary: List attendance (optional query from,to as YYYY-MM-DD UTC)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: from
+          in: query
+          schema: { type: string }
+        - name: to
+          in: query
+          schema: { type: string }
+      responses:
+        "200": { description: List }
+    post:
+      tags: [Attendance]
+      summary: Upsert attendance for a UTC day (teacher only)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId, date, status]
+              properties:
+                studentId: { type: string }
+                date: { type: string, description: YYYY-MM-DD (UTC day) }
+                status:
+                  type: string
+                  enum: [present, absent, late, excused]
+      responses:
+        "201": { description: Upserted }
+  /api/v1/courses/{courseId}/attendance/{attendanceId}:
+    patch:
+      tags: [Attendance]
+      summary: Update attendance row (teacher only)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: attendanceId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [present, absent, late, excused]
+                date: { type: string }
+      responses:
+        "200": { description: Updated }
+    delete:
+      tags: [Attendance]
+      summary: Soft-delete attendance (teacher only)
+      security: [bearerAuth]
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: attendanceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Deleted }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    UserMe:
+      type: object
+      properties:
+        id: { type: string }
+        authId: { type: string, nullable: true }
+        email: { type: string }
+        displayName: { type: string }
+        role: { type: string, enum: [teacher, student] }
+        archivedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }

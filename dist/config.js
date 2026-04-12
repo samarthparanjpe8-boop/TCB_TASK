@@ -1,0 +1,18 @@
+import "dotenv/config";
+function required(name) {
+    const v = process.env[name];
+    if (!v)
+        throw new Error(`Missing required env: ${name}`);
+    return v;
+}
+export const config = {
+    port: Number(process.env.PORT ?? 4000),
+    mongoUri: required("MONGODB_URI"),
+    corsOrigin: process.env.CORS_ORIGIN ?? "*",
+    supabaseUrl: required("SUPABASE_URL").replace(/\/$/, ""),
+    supabaseJwtSecret: required("SUPABASE_JWT_SECRET"),
+    teacherEmails: new Set((process.env.TEACHER_EMAILS ?? "")
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)),
+};

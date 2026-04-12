@@ -1,0 +1,156 @@
+{
+  "info": {
+    "name": "Classroom API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:4000" },
+    { "key": "accessToken", "value": "" },
+    { "key": "courseId", "value": "" },
+    { "key": "studentId", "value": "" },
+    { "key": "enrollmentId", "value": "" },
+    { "key": "gradeId", "value": "" },
+    { "key": "attendanceId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/health"
+      }
+    },
+    {
+      "name": "Me",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/api/v1/me"
+      }
+    },
+    {
+      "name": "Students — list",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/api/v1/students"
+      }
+    },
+    {
+      "name": "Students — create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"student.example@school.edu\",\n  \"displayName\": \"Example Student\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/students"
+      }
+    },
+    {
+      "name": "Courses — list",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/api/v1/courses"
+      }
+    },
+    {
+      "name": "Courses — create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Algebra I\",\n  \"code\": \"MATH101\",\n  \"description\": \"Intro course\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/courses"
+      }
+    },
+    {
+      "name": "Courses — get by id",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/api/v1/courses/{{courseId}}"
+      }
+    },
+    {
+      "name": "Enrollments — list",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/api/v1/courses/{{courseId}}/enrollments"
+      }
+    },
+    {
+      "name": "Enrollments — enroll student",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": \"{{studentId}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/courses/{{courseId}}/enrollments"
+      }
+    },
+    {
+      "name": "Grades — list",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/api/v1/courses/{{courseId}}/grades"
+      }
+    },
+    {
+      "name": "Grades — create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"assignmentName\": \"Quiz 1\",\n  \"score\": 18,\n  \"maxScore\": 20\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/courses/{{courseId}}/grades"
+      }
+    },
+    {
+      "name": "Attendance — list",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/api/v1/courses/{{courseId}}/attendance?from=2026-04-01&to=2026-04-30"
+      }
+    },
+    {
+      "name": "Attendance — upsert day",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"date\": \"2026-04-12\",\n  \"status\": \"present\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/courses/{{courseId}}/attendance"
+      }
+    }
+  ]
+}
