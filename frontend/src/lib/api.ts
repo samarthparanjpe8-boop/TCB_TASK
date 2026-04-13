@@ -2,7 +2,12 @@
 import axios from 'axios';
 
 const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+let apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
+// Automatically append /api/v1 if only the domain was provided in Environment Variables
+if (apiBaseUrl.startsWith('http') && !apiBaseUrl.endsWith('/api/v1')) {
+    apiBaseUrl = apiBaseUrl.replace(/\/$/, '') + '/api/v1';
+}
 
 export const api = axios.create({
     baseURL: apiBaseUrl,
