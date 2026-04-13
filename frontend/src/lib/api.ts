@@ -2,9 +2,10 @@
 import axios from 'axios';
 
 const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export const api = axios.create({
-    baseURL: '/api/v1',
+    baseURL: apiBaseUrl,
     headers: { 'Content-Type': 'application/json' },
 });
 
