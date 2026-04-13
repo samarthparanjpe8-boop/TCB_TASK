@@ -4,6 +4,9 @@ export interface User {
     authId: string | null;
     email: string;
     displayName: string;
+    firstName?: string;
+    lastName?: string;
+    registrationMarks?: number | null;
     role: 'teacher' | 'student';
     archivedAt: string | null;
     createdAt: string;

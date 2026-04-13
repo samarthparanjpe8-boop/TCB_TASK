@@ -1,27 +1,70 @@
 // src/pages/AcademicRecordsPage.tsx
-import React, { useState } from 'react';
-import { mockStudents, mockGrades, mockCourses, getLetterGrade } from '../lib/mockData';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { api, isDemoMode } from '../lib/api';
+import { getLetterGrade, mockCourses, mockGrades, mockStudents } from '../lib/mockData';
+import type { Course, Grade, Student } from '../types';
 
 export function AcademicRecordsPage() {
+    const { user } = useAuth();
+    const isTeacher = user?.role === 'teacher';
     const [selectedStudent, setSelectedStudent] = useState<string>('all');
+    const [students, setStudents] = useState<Student[]>(isDemoMode ? mockStudents : []);
+    const [courses, setCourses] = useState<Course[]>(isDemoMode ? mockCourses : []);
+    const [grades, setGrades] = useState<Grade[]>(isDemoMode ? mockGrades : []);
+    const [loading, setLoading] = useState(!isDemoMode);
 
-    const studentGrades = selectedStudent === 'all'
-        ? mockStudents.map((s) => {
-            const grades = mockGrades.filter((g) => g.studentId === s.id);
-            const avg = grades.length
-                ? Math.round(grades.reduce((sum, g) => sum + (g.score / g.maxScore) * 100, 0) / grades.length)
+    useEffect(() => {
+        if (isDemoMode) return;
+        const load = async () => {
+            setLoading(true);
+            try {
+                const { data: me } = await api.get('/me');
+                const { data: coursesData } = await api.get<Course[]>('/courses');
+                setCourses(coursesData);
+
+                if (isTeacher) {
+                    const { data: studentsData } = await api.get<Student[]>('/students');
+                    setStudents(studentsData);
+                } else {
+                    setStudents([
+                        {
+                            id: me.id,
+                            authId: me.authId ?? null,
+                            email: me.email,
+                            displayName: me.displayName,
+                        },
+                    ]);
+                    setSelectedStudent(me.id);
+                }
+
+                const gradeGroups = await Promise.all(
+                    coursesData.map(async (course) => {
+                        const { data } = await api.get<Grade[]>(`/courses/${course.id}/grades`);
+                        return data;
+                    })
+                );
+                setGrades(gradeGroups.flat());
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [isTeacher]);
+
+    const studentGrades = useMemo(() => {
+        const visibleStudents = selectedStudent === 'all'
+            ? students
+            : students.filter((s) => s.id === selectedStudent);
+
+        return visibleStudents.map((student) => {
+            const perStudentGrades = grades.filter((g) => g.studentId === student.id);
+            const avg = perStudentGrades.length
+                ? Math.round(perStudentGrades.reduce((sum, g) => sum + (g.score / g.maxScore) * 100, 0) / perStudentGrades.length)
                 : null;
-            return { student: s, grades, avg };
-        })
-        : mockStudents
-            .filter((s) => s.id === selectedStudent)
-            .map((s) => {
-                const grades = mockGrades.filter((g) => g.studentId === s.id);
-                const avg = grades.length
-                    ? Math.round(grades.reduce((sum, g) => sum + (g.score / g.maxScore) * 100, 0) / grades.length)
-                    : null;
-                return { student: s, grades, avg };
-            });
+            return { student, grades: perStudentGrades, avg };
+        });
+    }, [grades, selectedStudent, students]);
 
     return (
         <div>
@@ -31,18 +74,21 @@ export function AcademicRecordsPage() {
             </div>
 
             <div style={{ marginBottom: 20 }}>
-                <select
-                    className="form-input"
-                    style={{ maxWidth: 260 }}
-                    value={selectedStudent}
-                    onChange={(e) => setSelectedStudent(e.target.value)}
-                >
-                    <option value="all">All Students</option>
-                    {mockStudents.map((s) => <option key={s.id} value={s.id}>{s.displayName}</option>)}
-                </select>
+                {isTeacher && (
+                    <select
+                        className="form-input"
+                        style={{ maxWidth: 260 }}
+                        value={selectedStudent}
+                        onChange={(e) => setSelectedStudent(e.target.value)}
+                    >
+                        <option value="all">All Students</option>
+                        {students.map((s) => <option key={s.id} value={s.id}>{s.displayName}</option>)}
+                    </select>
+                )}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {loading && <div className="card"><div style={{ display: 'flex', justifyContent: 'center' }}><div className="spinner" /></div></div>}
                 {studentGrades.map(({ student, grades, avg }) => (
                     <div key={student.id} className="card">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
@@ -79,7 +125,7 @@ export function AcademicRecordsPage() {
                                     </thead>
                                     <tbody>
                                         {grades.map((g) => {
-                                            const courseName = mockCourses.find((c) => c.id === g.courseId)?.code || g.courseId;
+                                            const courseName = courses.find((c) => c.id === g.courseId)?.code || g.courseId;
                                             const letter = getLetterGrade(g.score, g.maxScore);
                                             const pct = Math.round((g.score / g.maxScore) * 100);
                                             return (

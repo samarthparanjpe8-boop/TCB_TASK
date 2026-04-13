@@ -20,9 +20,14 @@ api.interceptors.response.use(
     (res) => res,
     (err) => {
         if (err.response?.status === 401) {
-            localStorage.removeItem('classroomiq_token');
-            localStorage.removeItem('classroomiq_user');
-            window.location.href = '/sign-in';
+            const url = String(err.config?.url ?? '');
+            const isAuthAttempt =
+                url.includes('auth/sign-in') || url.includes('auth/register');
+            if (!isAuthAttempt) {
+                localStorage.removeItem('classroomiq_token');
+                localStorage.removeItem('classroomiq_user');
+                window.location.href = '/sign-in';
+            }
         }
         return Promise.reject(err);
     }

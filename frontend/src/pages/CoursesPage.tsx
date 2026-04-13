@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../components/Modal';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { api, isDemoMode } from '../lib/api';
 import { mockCourses, mockEnrollments } from '../lib/mockData';
 import type { Course } from '../types';
@@ -9,6 +10,8 @@ import type { Course } from '../types';
 let localCourses = [...mockCourses];
 
 export function CoursesPage() {
+    const { user } = useAuth();
+    const isTeacher = user?.role === 'teacher';
     const [courses, setCourses] = useState<Course[]>(isDemoMode ? [...localCourses] : []);
     const [loading, setLoading] = useState(!isDemoMode);
     const [addOpen, setAddOpen] = useState(false);
@@ -81,11 +84,13 @@ export function CoursesPage() {
                 <p>Manage courses and their enrollments.</p>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-                <button className="btn btn-primary btn-sm" onClick={() => { setForm({ title: '', code: '', description: '' }); setAddOpen(true); }}>
-                    + New Course
-                </button>
-            </div>
+            {isTeacher && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                    <button className="btn btn-primary btn-sm" onClick={() => { setForm({ title: '', code: '', description: '' }); setAddOpen(true); }}>
+                        + New Course
+                    </button>
+                </div>
+            )}
 
             {loading ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><div className="spinner" /></div>
@@ -107,10 +112,12 @@ export function CoursesPage() {
                                     <span className="badge" style={{ background: 'rgba(124,58,237,0.15)', color: 'var(--accent-purple-light)' }}>
                                         {c.code}
                                     </span>
-                                    <div style={{ display: 'flex', gap: 6 }}>
-                                        <button className="btn btn-ghost btn-sm" onClick={() => { setEditCourse(c); setForm({ title: c.title, code: c.code, description: c.description }); }}>✏</button>
-                                        <button className="btn btn-danger btn-sm" onClick={() => setDeleteCourse(c)}>🗑</button>
-                                    </div>
+                                    {isTeacher && (
+                                        <div style={{ display: 'flex', gap: 6 }}>
+                                            <button className="btn btn-ghost btn-sm" onClick={() => { setEditCourse(c); setForm({ title: c.title, code: c.code, description: c.description }); }}>✏</button>
+                                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteCourse(c)}>🗑</button>
+                                        </div>
+                                    )}
                                 </div>
                                 <h3 style={{ fontWeight: 700, marginBottom: 6 }}>{c.title}</h3>
                                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: 12 }}>{c.description || 'No description'}</p>
@@ -123,7 +130,7 @@ export function CoursesPage() {
                 </div>
             )}
 
-            <Modal isOpen={addOpen} onClose={() => setAddOpen(false)} title="New Course">
+            <Modal isOpen={isTeacher && addOpen} onClose={() => setAddOpen(false)} title="New Course">
                 <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <div className="form-group">
                         <label className="form-label">Title *</label>
@@ -144,7 +151,7 @@ export function CoursesPage() {
                 </form>
             </Modal>
 
-            <Modal isOpen={!!editCourse} onClose={() => setEditCourse(null)} title="Edit Course">
+            <Modal isOpen={isTeacher && !!editCourse} onClose={() => setEditCourse(null)} title="Edit Course">
                 <form onSubmit={handleEdit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <div className="form-group">
                         <label className="form-label">Title *</label>
@@ -161,7 +168,7 @@ export function CoursesPage() {
                 </form>
             </Modal>
 
-            <Modal isOpen={!!deleteCourse} onClose={() => setDeleteCourse(null)} title="Delete Course" width={400}>
+            <Modal isOpen={isTeacher && !!deleteCourse} onClose={() => setDeleteCourse(null)} title="Delete Course" width={400}>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: 20 }}>
                     Delete <strong>{deleteCourse?.title}</strong>? All enrollments and grades will also be removed.
                 </p>

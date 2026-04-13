@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import './Sidebar.css';
 
-const navItems = [
+const teacherNavItems = [
     { to: '/app', label: 'Dashboard', icon: '⊞', end: true },
     { to: '/app/students', label: 'Students', icon: '👤', end: false },
     { to: '/app/courses', label: 'Courses', icon: '📖', end: false },
@@ -13,8 +13,17 @@ const navItems = [
     { to: '/app/academic-records', label: 'Academic Records', icon: '📄', end: false },
 ];
 
+const studentNavItems = [
+    { to: '/app', label: 'Dashboard', icon: '⊞', end: true },
+    { to: '/app/courses', label: 'My Courses', icon: '📖', end: false },
+    { to: '/app/grades', label: 'My Grades', icon: '🎓', end: false },
+    { to: '/app/academic-records', label: 'My Record', icon: '📄', end: false },
+];
+
 export function Sidebar() {
     const { user, logout } = useAuth();
+    const navItems = user?.role === 'teacher' ? teacherNavItems : studentNavItems;
+
     const { theme, setTheme } = useTheme();
     const navigate = useNavigate();
 

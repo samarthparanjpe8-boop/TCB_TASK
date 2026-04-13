@@ -1,6 +1,6 @@
 .landing {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: transparent;
 }
 
 /* NAV */
@@ -12,7 +12,7 @@
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
-    background: var(--bg-primary);
+    background: rgba(15, 22, 36, 0.35);
     z-index: 50;
     backdrop-filter: blur(10px);
 }
@@ -130,8 +130,9 @@
     border-radius: var(--radius-lg);
     overflow: hidden;
     height: 260px;
-    background: linear-gradient(135deg, #1a2040, #2a3060);
+    background: linear-gradient(135deg, rgba(26, 32, 64, 0.6), rgba(42, 48, 96, 0.58));
     border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
 }
 
 .hero-img-inner {
@@ -178,6 +179,8 @@
 /* QUICK OVERVIEW */
 .quick-overview {
     background: var(--bg-card);
+    backdrop-filter: blur(12px) saturate(120%);
+    -webkit-backdrop-filter: blur(12px) saturate(120%);
 }
 
 .qo-header {
@@ -190,64 +193,6 @@
 .qo-title {
     font-weight: 600;
     font-size: 0.9rem;
-}
-
-.qo-season {
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
-.qo-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    margin-bottom: 16px;
-}
-
-.qo-stat {
-    padding: 12px;
-    text-align: center;
-    border-right: 1px solid var(--border);
-}
-
-.qo-stat:last-child {
-    border-right: none;
-}
-
-.qo-stat-val {
-    font-size: 1.4rem;
-    font-weight: 800;
-}
-
-.qo-stat-label {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-}
-
-.qo-students {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.qo-student-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.qo-student-name {
-    flex: 1;
-    font-weight: 500;
-}
-
-.qo-student-bar {
-    flex: 1;
 }
 
 @media (max-width: 768px) {

@@ -15,4 +15,9 @@ describe("auth (no database)", () => {
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
   });
+
+  it("does not require Bearer for auth sign-in route", async () => {
+    const res = await request(app).post("/api/v1/auth/sign-in").send({});
+    expect(res.status).toBe(400);
+  });
 });

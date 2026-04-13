@@ -92,12 +92,14 @@ Password: admin123
 - [ ] Each row shows Student, Course code, Assignment, Score, Letter Grade badge
 - [ ] **+ Record Grade** → modal with course/student/assignment/score fields
 - [ ] Edit / Delete work as expected
+- [ ] Student role sees read-only grade table for their own entries only
 
 ### 7. Academic Records Page (`/app/academic-records`)
 - [ ] Student filter dropdown
 - [ ] Each student card shows overall average percentage
 - [ ] Grade table with progress bars visible per assignment
 - [ ] Filtering by individual student narrows the view
+- [ ] Student role sees only their own record
 
 ### 8. Theme Switcher (Sidebar)
 - [ ] Light / System / Dark buttons at bottom of sidebar
@@ -138,6 +140,7 @@ Password: admin123
 Now sign in with real **Supabase** credentials. The frontend will call `/api/v1/*` which Vite proxies to `http://localhost:4000`.
 
 > **Note:** The authenticated user's email must be in `TEACHER_EMAILS` in the backend `.env` to access teacher-only routes (manage students, courses, grades).
+> Register now collects first name, last name, and account type only (no marks field).
 
 ---
 

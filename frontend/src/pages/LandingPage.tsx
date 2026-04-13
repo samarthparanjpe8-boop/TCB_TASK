@@ -13,12 +13,6 @@ const features = [
     'Edit or remove outdated entries instantly',
 ];
 
-const previewStudents = [
-    { name: 'Alice Johnson', grade: 'A', score: 91 },
-    { name: 'Clara Thompson', grade: 'A', score: 92 },
-    { name: 'Emily Nguyen', grade: 'A', score: 92 },
-];
-
 export function LandingPage() {
     const { theme, setTheme, resolvedTheme } = useTheme();
 
@@ -43,7 +37,7 @@ export function LandingPage() {
                         {resolvedTheme === 'dark' ? '☀' : '🌙'}
                     </button>
                     <Link to="/sign-in" className="btn btn-ghost">Sign In</Link>
-                    <Link to="/sign-in" className="btn btn-primary">Get Started</Link>
+                    <Link to="/register" className="btn btn-primary">Get Started</Link>
                 </div>
             </nav>
 
@@ -59,7 +53,7 @@ export function LandingPage() {
                         ClassroomIQ replaces disconnected spreadsheets with a centralized system for organizing student profiles, tracking grades, managing courses, and maintaining structured academic records.
                     </p>
                     <div className="hero-actions">
-                        <Link to="/sign-in" className="btn btn-primary" style={{ padding: '12px 28px', fontSize: '0.95rem' }}>
+                        <Link to="/register" className="btn btn-primary" style={{ padding: '12px 28px', fontSize: '0.95rem' }}>
                             Start Managing →
                         </Link>
                         <Link to="/sign-in" className="btn btn-outline" style={{ padding: '12px 28px', fontSize: '0.95rem' }}>
@@ -90,39 +84,11 @@ export function LandingPage() {
                     </div>
                     <div className="quick-overview card">
                         <div className="qo-header">
-                            <span className="qo-title">Quick Overview</span>
-                            <span className="qo-season text-purple">Fall 2025</span>
+                            <span className="qo-title">Built for focused classroom operations</span>
                         </div>
-                        <div className="qo-stats">
-                            <div className="qo-stat">
-                                <div className="qo-stat-val text-purple">6</div>
-                                <div className="qo-stat-label">Students</div>
-                            </div>
-                            <div className="qo-stat">
-                                <div className="qo-stat-val text-blue">5</div>
-                                <div className="qo-stat-label">Courses</div>
-                            </div>
-                            <div className="qo-stat">
-                                <div className="qo-stat-val text-green">86%</div>
-                                <div className="qo-stat-label">Avg Grade</div>
-                            </div>
-                        </div>
-                        <div className="qo-students">
-                            {previewStudents.map((s) => (
-                                <div key={s.name} className="qo-student-row">
-                                    <div className="avatar" style={{ background: 'var(--accent-purple)', color: '#fff', width: 28, height: 28, fontSize: '0.75rem' }}>
-                                        {s.name[0]}
-                                    </div>
-                                    <span className="qo-student-name">{s.name}</span>
-                                    <div className="qo-student-bar">
-                                        <div className="progress-bar" style={{ width: 80 }}>
-                                            <div className="progress-bar-fill" style={{ width: `${s.score}%` }} />
-                                        </div>
-                                    </div>
-                                    <span className="badge badge-A">{s.grade}</span>
-                                </div>
-                            ))}
-                        </div>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.7 }}>
+                            Keep student records, attendance, grades, and course data in one secure place with role-based access for teachers and students.
+                        </p>
                     </div>
                 </div>
             </div>

@@ -1,14 +1,28 @@
 // src/pages/GradesPage.tsx
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Modal } from '../components/Modal';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { api, isDemoMode } from '../lib/api';
 import { mockCourses, mockGrades, mockStudents, getLetterGrade } from '../lib/mockData';
 import type { Grade, Course, Student } from '../types';
 
 let localGrades = [...mockGrades];
 
+function getApiErrorMessage(err: unknown, fallback: string): string {
+    if (axios.isAxiosError(err)) {
+        const data = err.response?.data as { error?: string; message?: string } | undefined;
+        if (data?.error) return data.error;
+        if (typeof data?.message === 'string') return data.message;
+    }
+    if (err instanceof Error) return err.message;
+    return fallback;
+}
+
 export function GradesPage() {
+    const { user } = useAuth();
+    const isTeacher = user?.role === 'teacher';
     const [courses, setCourses] = useState<Course[]>(isDemoMode ? mockCourses : []);
     const [students, setStudents] = useState<Student[]>(isDemoMode ? mockStudents : []);
     const [selectedCourse, setSelectedCourse] = useState<string>('all');
@@ -17,15 +31,37 @@ export function GradesPage() {
     const [editGrade, setEditGrade] = useState<Grade | null>(null);
     const [deleteGrade, setDeleteGrade] = useState<Grade | null>(null);
     const [form, setForm] = useState({ studentId: '', assignmentName: '', score: '', maxScore: '100' });
+    const [loading, setLoading] = useState(!isDemoMode);
     const { showToast } = useToast();
 
     useEffect(() => {
         if (isDemoMode) return;
-        Promise.all([
-            api.get<Course[]>('/courses'),
-            api.get<Student[]>('/students'),
-        ]).then(([c, s]) => { setCourses(c.data); setStudents(s.data); });
-    }, []);
+        const load = async () => {
+            setLoading(true);
+            try {
+                const { data: courseData } = await api.get<Course[]>('/courses');
+                setCourses(courseData);
+                const gradeGroups = await Promise.all(
+                    courseData.map(async (course) => {
+                        const { data: gradeData } = await api.get<Grade[]>(`/courses/${course.id}/grades`);
+                        return gradeData;
+                    })
+                );
+                setGrades(gradeGroups.flat());
+
+                if (isTeacher) {
+                    const { data: studentData } = await api.get<Student[]>('/students');
+                    setStudents(studentData);
+                    return;
+                }
+            } catch {
+                showToast('Failed to load grades', 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [isTeacher, showToast]);
 
     const displayedGrades = selectedCourse === 'all'
         ? grades
@@ -45,6 +81,10 @@ export function GradesPage() {
                 localGrades.push(newG);
                 setGrades([...localGrades]);
             } else {
+                // Backend requires active enrollment before allowing grade creation.
+                await api.post(`/courses/${selectedCourse}/enrollments`, {
+                    studentId: form.studentId,
+                });
                 const { data } = await api.post<Grade>(`/courses/${selectedCourse}/grades`, {
                     studentId: form.studentId, assignmentName: form.assignmentName, score, maxScore,
                 });
@@ -53,7 +93,9 @@ export function GradesPage() {
             showToast('Grade recorded');
             setAddOpen(false);
             setForm({ studentId: '', assignmentName: '', score: '', maxScore: '100' });
-        } catch { showToast('Failed to record grade', 'error'); }
+        } catch (err: unknown) {
+            showToast(getApiErrorMessage(err, 'Failed to record grade'), 'error');
+        }
     };
 
     const handleEdit = async (e: React.FormEvent) => {
@@ -111,16 +153,20 @@ export function GradesPage() {
                         <option value="all">All Courses</option>
                         {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.code})</option>)}
                     </select>
-                    <button
-                        className="btn btn-primary btn-sm"
-                        style={{ marginLeft: 'auto' }}
-                        onClick={() => { setForm({ studentId: '', assignmentName: '', score: '', maxScore: '100' }); setAddOpen(true); }}
-                    >
-                        + Record Grade
-                    </button>
+                    {isTeacher && (
+                        <button
+                            className="btn btn-primary btn-sm"
+                            style={{ marginLeft: 'auto' }}
+                            onClick={() => { setForm({ studentId: '', assignmentName: '', score: '', maxScore: '100' }); setAddOpen(true); }}
+                        >
+                            + Record Grade
+                        </button>
+                    )}
                 </div>
 
-                {displayedGrades.length === 0 ? (
+                {loading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><div className="spinner" /></div>
+                ) : displayedGrades.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-state-icon">🎓</div>
                         <h3>No grades recorded</h3>
@@ -136,7 +182,7 @@ export function GradesPage() {
                                     <th>Assignment</th>
                                     <th>Score</th>
                                     <th>Grade</th>
-                                    <th>Actions</th>
+                                    {isTeacher && <th>Actions</th>}
                                 </tr>
                             </thead>
                             <tbody>
@@ -156,12 +202,14 @@ export function GradesPage() {
                                             <td style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{g.assignmentName}</td>
                                             <td style={{ fontWeight: 600 }}>{g.score}/{g.maxScore}</td>
                                             <td><span className={`badge badge-${letter}`}>{letter}</span></td>
-                                            <td>
-                                                <div style={{ display: 'flex', gap: 6 }}>
-                                                    <button className="btn btn-ghost btn-sm" onClick={() => { setEditGrade(g); setForm({ studentId: g.studentId, assignmentName: g.assignmentName, score: String(g.score), maxScore: String(g.maxScore) }); }}>✏</button>
-                                                    <button className="btn btn-danger btn-sm" onClick={() => setDeleteGrade(g)}>🗑</button>
-                                                </div>
-                                            </td>
+                                            {isTeacher && (
+                                                <td>
+                                                    <div style={{ display: 'flex', gap: 6 }}>
+                                                        <button className="btn btn-ghost btn-sm" onClick={() => { setEditGrade(g); setForm({ studentId: g.studentId, assignmentName: g.assignmentName, score: String(g.score), maxScore: String(g.maxScore) }); }}>✏</button>
+                                                        <button className="btn btn-danger btn-sm" onClick={() => setDeleteGrade(g)}>🗑</button>
+                                                    </div>
+                                                </td>
+                                            )}
                                         </tr>
                                     );
                                 })}
@@ -172,7 +220,7 @@ export function GradesPage() {
             </div>
 
             {/* Add Grade Modal */}
-            <Modal isOpen={addOpen} onClose={() => setAddOpen(false)} title="Record Grade">
+            <Modal isOpen={isTeacher && addOpen} onClose={() => setAddOpen(false)} title="Record Grade">
                 <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     {selectedCourse === 'all' && (
                         <div className="form-group">
@@ -212,7 +260,7 @@ export function GradesPage() {
             </Modal>
 
             {/* Edit Modal */}
-            <Modal isOpen={!!editGrade} onClose={() => setEditGrade(null)} title="Edit Grade">
+            <Modal isOpen={isTeacher && !!editGrade} onClose={() => setEditGrade(null)} title="Edit Grade">
                 <form onSubmit={handleEdit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <div className="form-group">
                         <label className="form-label">Assignment Name</label>
@@ -235,7 +283,7 @@ export function GradesPage() {
                 </form>
             </Modal>
 
-            <Modal isOpen={!!deleteGrade} onClose={() => setDeleteGrade(null)} title="Delete Grade" width={400}>
+            <Modal isOpen={isTeacher && !!deleteGrade} onClose={() => setDeleteGrade(null)} title="Delete Grade" width={400}>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: 20 }}>Delete this grade entry? This cannot be undone.</p>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                     <button className="btn btn-outline btn-sm" onClick={() => setDeleteGrade(null)}>Cancel</button>

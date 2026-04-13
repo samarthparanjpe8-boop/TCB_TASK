@@ -13,6 +13,7 @@ import { isDemoMode } from '../lib/api';
 import { api } from '../lib/api';
 import { useEffect, useState } from 'react';
 import type { Student, Course, Grade } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import './DashboardPage.css';
 
 const GRADE_COLORS: Record<string, string> = {
@@ -20,20 +21,36 @@ const GRADE_COLORS: Record<string, string> = {
 };
 
 export function DashboardPage() {
+    const { user } = useAuth();
+    const isTeacher = user?.role === 'teacher';
     const [students, setStudents] = useState<Student[]>(isDemoMode ? mockStudents : []);
     const [courses, setCourses] = useState<Course[]>(isDemoMode ? mockCourses : []);
     const [grades, setGrades] = useState<Grade[]>(isDemoMode ? mockGrades : []);
 
     useEffect(() => {
         if (isDemoMode) return;
-        Promise.all([
-            api.get<Student[]>('/students'),
-            api.get<Course[]>('/courses'),
-        ]).then(([s, c]) => {
-            setStudents(s.data);
-            setCourses(c.data);
-        }).catch(() => { });
-    }, []);
+        const load = async () => {
+            try {
+                const { data: coursesData } = await api.get<Course[]>('/courses');
+                setCourses(coursesData);
+                if (isTeacher) {
+                    const { data: studentsData } = await api.get<Student[]>('/students');
+                    setStudents(studentsData);
+                } else {
+                    const { data: me } = await api.get('/me');
+                    setStudents([{
+                        id: me.id,
+                        authId: me.authId ?? null,
+                        email: me.email,
+                        displayName: me.displayName,
+                    }]);
+                }
+            } catch {
+                // ignore dashboard fetch errors to keep app usable
+            }
+        };
+        load();
+    }, [isTeacher]);
 
     const gradeDistribution = useMemo(() => {
         const counts: Record<string, number> = { A: 0, B: 0, C: 0, D: 0, F: 0 };

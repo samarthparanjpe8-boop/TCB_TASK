@@ -1,0 +1,89 @@
+import { config } from "../config.js";
+
+const jsonHeaders = {
+  apikey: config.supabaseAnonKey,
+  "Content-Type": "application/json",
+} as const;
+
+export type GoTrueAuthResponse = {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  token_type?: string;
+  user?: { id: string; email?: string };
+  error_description?: string;
+  msg?: string;
+  message?: string;
+};
+
+export async function goTruePasswordGrant(
+  email: string,
+  password: string
+): Promise<{ res: Response; data: GoTrueAuthResponse }> {
+  const res = await fetch(`${config.supabaseUrl}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify({ email, password }),
+  });
+  const data = (await res.json()) as GoTrueAuthResponse;
+  return { res, data };
+}
+
+export async function goTrueSignup(body: {
+  email: string;
+  password: string;
+  data: Record<string, unknown>;
+}): Promise<{ res: Response; data: GoTrueAuthResponse }> {
+  const res = await fetch(`${config.supabaseUrl}/auth/v1/signup`, {
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify({
+      email: body.email,
+      password: body.password,
+      data: body.data,
+    }),
+  });
+  const data = (await res.json()) as GoTrueAuthResponse;
+  return { res, data };
+}
+
+export async function goTrueRecover(
+  email: string,
+  redirectTo?: string
+): Promise<{ res: Response; data: GoTrueAuthResponse }> {
+  const res = await fetch(`${config.supabaseUrl}/auth/v1/recover`, {
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify({
+      email,
+      ...(redirectTo ? { redirect_to: redirectTo } : {}),
+    }),
+  });
+  const data = (await res.json()) as GoTrueAuthResponse;
+  return { res, data };
+}
+
+export async function goTrueUpdatePassword(
+  accessToken: string,
+  password: string
+): Promise<{ res: Response; data: GoTrueAuthResponse }> {
+  const res = await fetch(`${config.supabaseUrl}/auth/v1/user`, {
+    method: "PUT",
+    headers: {
+      ...jsonHeaders,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ password }),
+  });
+  const data = (await res.json()) as GoTrueAuthResponse;
+  return { res, data };
+}
+
+export function goTrueErrorMessage(data: GoTrueAuthResponse, fallback: string): string {
+  return (
+    data.error_description ??
+    data.msg ??
+    (typeof data.message === "string" ? data.message : undefined) ??
+    fallback
+  );
+}

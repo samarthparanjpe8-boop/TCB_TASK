@@ -3,6 +3,7 @@ import cors from "cors";
 import { config } from "./config.js";
 import { requireAuth } from "./middleware/auth.js";
 import { asyncHandler, errorHandler } from "./lib/asyncHandler.js";
+import { authRouter } from "./routes/auth.js";
 import { meRouter } from "./routes/me.js";
 import { studentsRouter } from "./routes/students.js";
 import { coursesRouter } from "./routes/courses.js";
@@ -22,16 +23,20 @@ export function createApp() {
     })
   );
 
-  const v1 = express.Router();
-  v1.use(requireAuth);
-  v1.use(meRouter);
-  v1.use("/students", studentsRouter);
-  v1.use("/courses", coursesRouter);
-  v1.use("/courses/:courseId/enrollments", enrollmentsRouter);
-  v1.use("/courses/:courseId/grades", gradesRouter);
-  v1.use("/courses/:courseId/attendance", attendanceRouter);
+  const v1Public = express.Router();
+  v1Public.use(authRouter);
 
-  app.use("/api/v1", v1);
+  const v1Protected = express.Router();
+  v1Protected.use(requireAuth);
+  v1Protected.use(meRouter);
+  v1Protected.use("/students", studentsRouter);
+  v1Protected.use("/courses", coursesRouter);
+  v1Protected.use("/courses/:courseId/enrollments", enrollmentsRouter);
+  v1Protected.use("/courses/:courseId/grades", gradesRouter);
+  v1Protected.use("/courses/:courseId/attendance", attendanceRouter);
+
+  app.use("/api/v1", v1Public);
+  app.use("/api/v1", v1Protected);
   app.use(errorHandler);
   return app;
 }

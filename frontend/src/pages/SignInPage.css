@@ -1,6 +1,6 @@
 .signin-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: transparent;
     display: flex;
     flex-direction: column;
 }
@@ -30,7 +30,7 @@
     align-items: center;
     justify-content: center;
     margin-bottom: 20px;
-    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+    box-shadow: 0 10px 26px rgba(90, 82, 236, 0.45);
 }
 
 .signin-title {
@@ -48,6 +48,9 @@
 .signin-card {
     width: 100%;
     max-width: 460px;
+    background: var(--bg-card);
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
 }
 
 .demo-hint {

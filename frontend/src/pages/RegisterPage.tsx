@@ -1,4 +1,4 @@
-// src/pages/SignInPage.tsx
+// src/pages/RegisterPage.tsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,13 +6,16 @@ import { useTheme } from '../contexts/ThemeContext';
 import { isDemoMode } from '../lib/api';
 import './SignInPage.css';
 
-export function SignInPage() {
-    const [email, setEmail] = useState(isDemoMode ? 'admin@school.edu' : '');
+export function RegisterPage() {
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [role, setRole] = useState<'student' | 'teacher'>('student');
     const [showPass, setShowPass] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { login } = useAuth();
+    const { register } = useAuth();
     const { resolvedTheme, setTheme } = useTheme();
     const navigate = useNavigate();
 
@@ -21,10 +24,10 @@ export function SignInPage() {
         setError('');
         setIsLoading(true);
         try {
-            await login(email, password);
+            await register({ email, password, firstName, lastName, role });
             navigate('/app');
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Login failed. Try again.');
+            setError(err instanceof Error ? err.message : 'Registration failed. Try again.');
         } finally {
             setIsLoading(false);
         }
@@ -37,6 +40,7 @@ export function SignInPage() {
                     ← Back to home
                 </Link>
                 <button
+                    type="button"
                     className="theme-toggle-btn"
                     onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
                 >
@@ -50,8 +54,8 @@ export function SignInPage() {
                         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </div>
-                <h1 className="signin-title">Welcome back</h1>
-                <p className="signin-sub">Sign in to ClassroomIQ</p>
+                <h1 className="signin-title">Create your account</h1>
+                <p className="signin-sub">Create a secure ClassroomIQ account</p>
 
                 <div className="signin-card card">
                     {isDemoMode && (
@@ -60,35 +64,7 @@ export function SignInPage() {
                             <div>
                                 <div className="demo-hint-title">Demo Mode</div>
                                 <div className="demo-hint-text">
-                                    Use any email and a password of 4+ characters to sign in.<br />
-                                    Suggested: <strong>admin@school.edu / admin123</strong>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    {isDemoMode ? (
-                        <div className="demo-hint">
-                            <span className="demo-hint-icon">🧪</span>
-                            <div>
-                                <div className="demo-hint-title">Suggested Demo IDs</div>
-                                <div className="demo-hint-text">
-                                    Student: <strong>student.test@school.com / Test@12345</strong><br />
-                                    Teacher: <strong>teacher.test@school.com / Test@12345</strong>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="demo-hint">
-                            <span className="demo-hint-icon">🔐</span>
-                            <div>
-                                <div className="demo-hint-title">Live Mode</div>
-                                <div className="demo-hint-text">
-                                    Use a registered Supabase account, or create one from the
-                                    {' '}
-                                    <Link to="/register" style={{ color: 'var(--accent-purple-light)', fontWeight: 600 }}>
-                                        registration page
-                                    </Link>
-                                    .
+                                    Your profile is stored locally. Use a password of 4+ characters.
                                 </div>
                             </div>
                         </div>
@@ -96,36 +72,81 @@ export function SignInPage() {
 
                     <form onSubmit={handleSubmit} className="signin-form">
                         <div className="form-group">
-                            <label className="form-label">Email address</label>
+                            <label className="form-label" htmlFor="reg-first">First name</label>
+                            <div className="input-with-icon">
+                                <span className="input-icon">👤</span>
+                                <input
+                                    id="reg-first"
+                                    type="text"
+                                    className="form-input"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                    placeholder="Jane"
+                                    required
+                                    autoComplete="given-name"
+                                />
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="reg-last">Last name</label>
+                            <div className="input-with-icon">
+                                <span className="input-icon">👤</span>
+                                <input
+                                    id="reg-last"
+                                    type="text"
+                                    className="form-input"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    placeholder="Doe"
+                                    required
+                                    autoComplete="family-name"
+                                />
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="reg-role">Account type</label>
+                            <select
+                                id="reg-role"
+                                className="form-input"
+                                value={role}
+                                onChange={(e) => setRole(e.target.value as 'student' | 'teacher')}
+                                required
+                            >
+                                <option value="student">Student</option>
+                                <option value="teacher">Teacher</option>
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="reg-email">Email address</label>
                             <div className="input-with-icon">
                                 <span className="input-icon">✉</span>
                                 <input
-                                    id="email"
+                                    id="reg-email"
                                     type="email"
                                     className="form-input"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="admin@school.edu"
+                                    placeholder="you@school.edu"
                                     required
                                     autoComplete="email"
                                 />
                             </div>
                         </div>
-
                         <div className="form-group">
-                            <label className="form-label">Password</label>
+                            <label className="form-label" htmlFor="reg-password">Password</label>
                             <div className="input-with-icon">
                                 <span className="input-icon">🔒</span>
                                 <input
-                                    id="password"
+                                    id="reg-password"
                                     type={showPass ? 'text' : 'password'}
                                     className="form-input"
                                     style={{ paddingRight: 40 }}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Enter your password"
+                                    placeholder="Choose a password"
                                     required
-                                    autoComplete="current-password"
+                                    autoComplete="new-password"
+                                    minLength={isDemoMode ? 4 : 6}
                                 />
                                 <button
                                     type="button"
@@ -136,11 +157,6 @@ export function SignInPage() {
                                     {showPass ? '🙈' : '👁'}
                                 </button>
                             </div>
-                            <div style={{ marginTop: 8, textAlign: 'right' }}>
-                                <Link to="/forgot-password" style={{ color: 'var(--accent-purple-light)', fontSize: '0.82rem', fontWeight: 600 }}>
-                                    Forgot password?
-                                </Link>
-                            </div>
                         </div>
 
                         {error && <div className="signin-error">{error}</div>}
@@ -149,14 +165,17 @@ export function SignInPage() {
                             type="submit"
                             className="btn btn-primary signin-btn"
                             disabled={isLoading}
-                            id="sign-in-btn"
+                            id="register-btn"
                         >
-                            {isLoading ? <span className="pulse">Signing in…</span> : 'Sign In'}
+                            {isLoading ? <span className="pulse">Creating account…</span> : 'Create account'}
                         </button>
+                        <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                            Teacher sign-up works only for emails configured by the admin.
+                        </p>
                         <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
-                            New here?{' '}
-                            <Link to="/register" style={{ color: 'var(--accent-purple-light)', fontWeight: 600 }}>
-                                Create an account
+                            Already have an account?{' '}
+                            <Link to="/sign-in" style={{ color: 'var(--accent-purple-light)', fontWeight: 600 }}>
+                                Sign in
                             </Link>
                         </p>
                     </form>

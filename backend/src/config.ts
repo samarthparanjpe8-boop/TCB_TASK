@@ -11,6 +11,7 @@ export const config = {
   mongoUri: required("MONGODB_URI"),
   corsOrigin: process.env.CORS_ORIGIN ?? "*",
   supabaseUrl: required("SUPABASE_URL").replace(/\/$/, ""),
+  supabaseAnonKey: required("SUPABASE_ANON_KEY"),
   supabaseJwtSecret: required("SUPABASE_JWT_SECRET"),
   teacherEmails: new Set(
     (process.env.TEACHER_EMAILS ?? "")
