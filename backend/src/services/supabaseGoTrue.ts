@@ -1,9 +1,24 @@
+import * as https from "node:https";
 import { config } from "../config.js";
 
 const jsonHeaders = {
   apikey: config.supabaseAnonKey,
   "Content-Type": "application/json",
 } as const;
+
+const allowInsecureSupabase =
+  process.env.SUPABASE_ALLOW_INSECURE === "1" ||
+  (process.env.NODE_ENV !== "production" &&
+    (config.supabaseUrl.startsWith("https://localhost") ||
+      config.supabaseUrl.startsWith("https://127.0.0.1")));
+
+const supabaseFetchAgent = allowInsecureSupabase
+  ? new https.Agent({ rejectUnauthorized: false })
+  : undefined;
+
+function supabaseFetch(url: string, init: RequestInit) {
+  return fetch(url, { agent: supabaseFetchAgent, ...init } as any);
+}
 
 export type GoTrueAuthResponse = {
   access_token?: string;
@@ -20,7 +35,7 @@ export async function goTruePasswordGrant(
   email: string,
   password: string
 ): Promise<{ res: Response; data: GoTrueAuthResponse }> {
-  const res = await fetch(`${config.supabaseUrl}/auth/v1/token?grant_type=password`, {
+  const res = await supabaseFetch(`${config.supabaseUrl}/auth/v1/token?grant_type=password`, {
     method: "POST",
     headers: jsonHeaders,
     body: JSON.stringify({ email, password }),
@@ -34,7 +49,7 @@ export async function goTrueSignup(body: {
   password: string;
   data: Record<string, unknown>;
 }): Promise<{ res: Response; data: GoTrueAuthResponse }> {
-  const adminRes = await fetch(`${config.supabaseUrl}/auth/v1/admin/users`, {
+  const adminRes = await supabaseFetch(`${config.supabaseUrl}/auth/v1/admin/users`, {
     method: "POST",
     headers: {
       apikey: config.supabaseJwtSecret,
@@ -62,7 +77,7 @@ export async function goTrueRecover(
   const url = new URL(`${config.supabaseUrl}/auth/v1/recover`);
   if (redirectTo) url.searchParams.set("redirect_to", redirectTo);
 
-  const res = await fetch(url.toString(), {
+  const res = await supabaseFetch(url.toString(), {
     method: "POST",
     headers: jsonHeaders,
     body: JSON.stringify({ email }),
@@ -75,7 +90,7 @@ export async function goTrueUpdatePassword(
   accessToken: string,
   password: string
 ): Promise<{ res: Response; data: GoTrueAuthResponse }> {
-  const res = await fetch(`${config.supabaseUrl}/auth/v1/user`, {
+  const res = await supabaseFetch(`${config.supabaseUrl}/auth/v1/user`, {
     method: "PUT",
     headers: {
       ...jsonHeaders,

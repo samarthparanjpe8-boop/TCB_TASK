@@ -73,9 +73,9 @@ function createDemoUser(input: {
 }
 
 async function persistAccessToken(accessToken: string): Promise<User> {
-    localStorage.setItem('classroomiq_token', accessToken);
+    localStorage.setItem('studentiq_token', accessToken);
     const { data: me } = await api.get<User>('/me');
-    localStorage.setItem('classroomiq_user', JSON.stringify(me));
+    localStorage.setItem('studentiq_user', JSON.stringify(me));
     return me;
 }
 
@@ -85,8 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const storedToken = localStorage.getItem('classroomiq_token');
-        const storedUser = localStorage.getItem('classroomiq_user');
+        const storedToken = localStorage.getItem('studentiq_token');
+        const storedUser = localStorage.getItem('studentiq_user');
         if (storedToken && storedUser) {
             setToken(storedToken);
             setUser(JSON.parse(storedUser) as User);
@@ -110,8 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 lastName: 'Teacher',
                 role: 'teacher',
             });
-            localStorage.setItem('classroomiq_token', demoToken);
-            localStorage.setItem('classroomiq_user', JSON.stringify(demoUser));
+            localStorage.setItem('studentiq_token', demoToken);
+            localStorage.setItem('studentiq_user', JSON.stringify(demoUser));
             setToken(demoToken);
             setUser(demoUser);
             return;
@@ -154,8 +154,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 role: input.role,
             });
             const demoUser = createDemoUser({ email, firstName, lastName, role: input.role });
-            localStorage.setItem('classroomiq_token', demoToken);
-            localStorage.setItem('classroomiq_user', JSON.stringify(demoUser));
+            localStorage.setItem('studentiq_token', demoToken);
+            localStorage.setItem('studentiq_user', JSON.stringify(demoUser));
             setToken(demoToken);
             setUser(demoUser);
             return;
@@ -181,8 +181,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const logout = () => {
-        localStorage.removeItem('classroomiq_token');
-        localStorage.removeItem('classroomiq_user');
+        localStorage.removeItem('studentiq_token');
+        localStorage.removeItem('studentiq_user');
         setToken(null);
         setUser(null);
     };

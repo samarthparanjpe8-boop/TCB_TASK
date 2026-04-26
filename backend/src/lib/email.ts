@@ -19,7 +19,7 @@ export async function sendTeacherApprovalEmail(userEmail: string, userId: string
   const approvalLink = `${baseUrl}/api/v1/auth/approve-teacher?userId=${userId}&token=${token}`;
 
   const mailOptions = {
-    from: `"ClassroomIQ Admin" <${process.env.SMTP_USER || "noreply@school.edu"}>`,
+    from: `"StudentIQ Admin" <${process.env.SMTP_USER || "noreply@school.edu"}>`,
     to: adminEmail,
     subject: "Teacher Approval Required",
     html: `

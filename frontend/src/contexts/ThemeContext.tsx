@@ -13,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setThemeState] = useState<Theme>(() => {
-        return (localStorage.getItem('classroomiq_theme') as Theme) || 'dark';
+        return (localStorage.getItem('studentiq_theme') as Theme) || 'dark';
     });
 
     const getResolved = (t: Theme): 'light' | 'dark' => {
@@ -27,7 +27,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     const setTheme = (t: Theme) => {
         setThemeState(t);
-        localStorage.setItem('classroomiq_theme', t);
+        localStorage.setItem('studentiq_theme', t);
     };
 
     useEffect(() => {

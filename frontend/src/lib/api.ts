@@ -15,7 +15,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('classroomiq_token');
+    const token = localStorage.getItem('studentiq_token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,8 +30,8 @@ api.interceptors.response.use(
             const isAuthAttempt =
                 url.includes('auth/sign-in') || url.includes('auth/register');
             if (!isAuthAttempt) {
-                localStorage.removeItem('classroomiq_token');
-                localStorage.removeItem('classroomiq_user');
+                localStorage.removeItem('studentiq_token');
+                localStorage.removeItem('studentiq_user');
                 window.location.href = '/sign-in';
             }
         }

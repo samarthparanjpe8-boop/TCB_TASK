@@ -46,7 +46,7 @@ export function Sidebar() {
                     </svg>
                 </div>
                 <div>
-                    <div className="brand-name">Udemy Inter. school</div>
+                    <div className="brand-name">StudentIQ</div>
                     <div className="brand-sub">Management System</div>
                 </div>
             </div>

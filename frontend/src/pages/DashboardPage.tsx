@@ -116,7 +116,7 @@ export function DashboardPage() {
                                         return (
                                             <tr key={g.id}>
                                                 <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c?.code || '—'}</td>
-                                                <td>{c?.name || 'Unknown Course'}</td>
+                                                <td>{c?.title || 'Unknown Course'}</td>
                                                 <td>{g.score}</td>
                                                 <td>{g.maxScore}</td>
                                                 <td><span className={`badge badge-${letter}`}>{letter}</span></td>

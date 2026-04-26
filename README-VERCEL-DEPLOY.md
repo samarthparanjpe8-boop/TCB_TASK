@@ -1,4 +1,4 @@
-# ClassroomIQ Deployment Guide (Vercel + API Host)
+# StudentIQ Deployment Guide (Vercel + API Host)
 
 This guide shows the **recommended production setup** for this repo:
 

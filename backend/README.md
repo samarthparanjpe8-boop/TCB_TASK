@@ -35,6 +35,7 @@ cp .env.example .env
 | `SUPABASE_JWT_SECRET` | JWT secret used to verify Bearer tokens (must match tokens you send) |
 | `TEACHER_EMAILS` | Comma-separated emails treated as **teachers** on first authenticated request |
 | `SUPABASE_ANON_KEY` | Only for `npm run get-token` (dev convenience; not required by the API process itself) |
+| `SUPABASE_ALLOW_INSECURE` | Set to `1` to allow local self-signed HTTPS certs when `SUPABASE_URL` uses `https://localhost` |
 | `TEACHER_EMAIL` / `TEACHER_PASSWORD` | Optional defaults for `get-token` |
 
 For **automated tests**, `src/test/setup.ts` sets safe defaults when variables are missing, so you often do **not** need a full `.env` for `npm test` alone.

@@ -59,7 +59,7 @@ export function RegisterPage() {
                     </svg>
                 </div>
                 <h1 className="signin-title">Create your account</h1>
-                <p className="signin-sub">Create a secure ClassroomIQ account</p>
+                <p className="signin-sub">Create a secure StudentIQ account</p>
 
                 <div className="signin-card card">
                     {isDemoMode && (

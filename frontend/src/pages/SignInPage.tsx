@@ -58,7 +58,7 @@ export function SignInPage() {
                     </svg>
                 </div>
                 <h1 className="signin-title">Welcome back</h1>
-                <p className="signin-sub">Sign in to ClassroomIQ</p>
+                <p className="signin-sub">Sign in to StudentIQ</p>
 
                 <div className="signin-card card">
                     {approved && (

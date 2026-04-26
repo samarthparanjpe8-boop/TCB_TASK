@@ -1,6 +1,6 @@
-# ClassroomIQ Frontend
+# StudentIQ Frontend
 
-A React + TypeScript frontend for the **ClassroomIQ** classroom management system, built with Vite.
+A React + TypeScript frontend for the **StudentIQ** classroom management system, built with Vite.
 
 ---
 

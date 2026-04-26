@@ -26,7 +26,7 @@ export function LandingPage() {
                             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     </div>
-                    <span className="landing-brand-text" style={{ fontWeight: 700 }}>Udemy Inter. school</span>
+                    <span className="landing-brand-text" style={{ fontWeight: 700 }}>StudentIQ</span>
                 </div>
                 <div className="landing-nav-actions">
                     <button
@@ -54,7 +54,7 @@ export function LandingPage() {
                         <span className="text-blue">Course</span> in One Place
                     </h1>
                     <p className="hero-desc">
-                        Udemy Inter. school replaces disconnected spreadsheets with a centralized system for organizing student profiles, tracking grades, managing courses, and maintaining structured academic records.
+                        StudentIQ replaces disconnected spreadsheets with a centralized system for organizing student profiles, tracking grades, managing courses, and maintaining structured academic records.
                     </p>
                     <div className="hero-actions">
                         <Link to="/register" className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1rem', borderRadius: '8px' }}>
