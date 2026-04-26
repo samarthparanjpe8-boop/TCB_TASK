@@ -21,15 +21,9 @@ services:
       - key: SUPABASE_JWT_SECRET
         sync: false
       - key: FRONTEND_URL
-        fromService:
-          type: web
-          name: classroom-frontend
-          property: url
+        sync: false
       - key: BACKEND_URL
-        fromService:
-          type: web
-          name: classroom-backend
-          property: url
+        sync: false
 
   # Frontend Vite App
   - type: web
@@ -45,7 +39,4 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: classroom-backend
-          property: url
+        sync: false
