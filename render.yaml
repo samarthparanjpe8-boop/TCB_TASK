@@ -32,7 +32,7 @@ services:
           property: url
 
   # Frontend Vite App
-  - type: static_site
+  - type: static
     name: classroom-frontend
     plan: free
     rootDir: frontend
