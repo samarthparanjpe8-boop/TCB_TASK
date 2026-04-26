@@ -61,7 +61,7 @@ enrollmentsRouter.post(
     if (!student) throw new HttpError(404, "Student not found");
     const created = await Enrollment.findOneAndUpdate(
       { courseId, studentId: sid },
-      { $setOnInsert: { status: "active" }, $set: { status: "active" } },
+      { $set: { status: "active" } },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
     res.status(201).json({

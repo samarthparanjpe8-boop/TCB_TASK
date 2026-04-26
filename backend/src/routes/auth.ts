@@ -9,6 +9,8 @@ import {
   goTrueSignup,
   goTrueUpdatePassword,
 } from "../services/supabaseGoTrue.js";
+import { randomBytes } from "node:crypto";
+import { sendTeacherApprovalEmail } from "../lib/email.js";
 
 function resolveRole(email: string): "teacher" | "student" {
   return config.teacherEmails.has(email.toLowerCase()) ? "teacher" : "student";
@@ -85,7 +87,10 @@ authRouter.post(
     }
 
     const role = requestedRole === "teacher" ? "teacher" : resolveRole(email);
-    await User.findOneAndUpdate(
+    const isTeacher = role === "teacher";
+    const approvalToken = isTeacher ? randomBytes(32).toString("hex") : null;
+
+    const user = await User.findOneAndUpdate(
       { email },
       {
         $set: {
@@ -96,10 +101,17 @@ authRouter.post(
           lastName,
           role,
           archivedAt: null,
+          ...(isTeacher ? { isApproved: false, approvalToken } : {}),
         },
       },
       { upsert: true, new: true }
     );
+
+    if (isTeacher && user) {
+      // Send email to admin
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      await sendTeacherApprovalEmail(email, String(user._id), approvalToken!, baseUrl);
+    }
 
     res.status(201).json({
       access_token: data.access_token,
@@ -117,7 +129,7 @@ authRouter.post(
     const redirectTo =
       typeof req.body?.redirectTo === "string" && req.body.redirectTo.trim()
         ? req.body.redirectTo.trim()
-        : undefined;
+        : `${config.frontendUrl}/reset-password`;
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
     }
@@ -147,5 +159,25 @@ authRouter.post(
       });
     }
     res.json({ ok: true, message: "Password updated successfully" });
+  })
+);
+
+authRouter.get(
+  "/auth/approve-teacher",
+  asyncHandler(async (req, res) => {
+    const { userId, token } = req.query as { userId?: string; token?: string };
+    if (!userId || !token) {
+      return res.status(400).json({ error: "userId and token are required" });
+    }
+    const user = await User.findOne({ _id: userId, approvalToken: token });
+    if (!user) {
+      return res.status(404).json({ error: "Invalid approval link or user not found" });
+    }
+    user.isApproved = true;
+    user.approvalToken = null;
+    await user.save();
+
+    // Redirect to frontend with success message
+    res.redirect(`${config.frontendUrl}/sign-in?approved=true`);
   })
 );

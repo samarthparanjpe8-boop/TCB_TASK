@@ -1,17 +1,10 @@
 // src/pages/DashboardPage.tsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-    PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-    BarChart, Bar, XAxis, YAxis, CartesianGrid,
-} from 'recharts';
+
 import { StatCard } from '../components/StatCard';
-import {
-    mockStudents, mockCourses, mockGrades, mockEnrollments, getLetterGrade
-} from '../lib/mockData';
-import { isDemoMode } from '../lib/api';
-import { api } from '../lib/api';
-import { useEffect, useState } from 'react';
+import { mockStudents, mockCourses, mockGrades, mockEnrollments, getLetterGrade } from '../lib/mockData';
+import { isDemoMode, api } from '../lib/api';
 import type { Student, Course, Grade } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import './DashboardPage.css';
@@ -28,14 +21,26 @@ export function DashboardPage() {
     const [grades, setGrades] = useState<Grade[]>(isDemoMode ? mockGrades : []);
 
     useEffect(() => {
-        if (isDemoMode) return;
+        if (isDemoMode) {
+            if (!isTeacher && user) {
+                // If demo mode student, just mock a student view by filtering
+                setStudents([mockStudents[0]]);
+                setGrades(mockGrades.filter(g => g.studentId === mockStudents[0].id));
+            }
+            return;
+        }
+
         const load = async () => {
             try {
                 const { data: coursesData } = await api.get<Course[]>('/courses');
                 setCourses(coursesData);
+                
                 if (isTeacher) {
                     const { data: studentsData } = await api.get<Student[]>('/students');
                     setStudents(studentsData);
+                    // Assume teacher gets all grades via some route or just ignores grades on dashboard in real app
+                    // (The original code didn't fetch all grades dynamically for teacher on dashboard, just used mock fallback or crashed silently)
+                    // In a real app we'd fetch dashboard stats. For now we use the existing logic.
                 } else {
                     const { data: me } = await api.get('/me');
                     setStudents([{
@@ -44,223 +49,189 @@ export function DashboardPage() {
                         email: me.email,
                         displayName: me.displayName,
                     }]);
+                    
+                    const gradeGroups = await Promise.all(
+                        (coursesData || []).map(async (course) => {
+                            try {
+                                const { data: gradeData } = await api.get<Grade[]>(`/courses/${course.id}/grades`);
+                                return Array.isArray(gradeData) ? gradeData.filter(g => g.studentId === me.id) : [];
+                            } catch { 
+                                return []; 
+                            }
+                        })
+                    );
+                    setGrades(gradeGroups.flat());
                 }
             } catch {
-                // ignore dashboard fetch errors to keep app usable
+                // ignore dashboard fetch errors
             }
         };
         load();
-    }, [isTeacher]);
+    }, [isTeacher, user]);
 
-    const gradeDistribution = useMemo(() => {
-        const counts: Record<string, number> = { A: 0, B: 0, C: 0, D: 0, F: 0 };
-        grades.forEach((g) => { counts[getLetterGrade(g.score, g.maxScore)]++; });
-        return Object.entries(counts)
-            .filter(([, v]) => v > 0)
-            .map(([name, value]) => ({ name, value }));
+    // Recent grades for teacher dashboard flat list
+    const recentGrades = useMemo(() => {
+        return [...grades]
+            .sort((a, b) => new Date(b.createdAt || new Date()).getTime() - new Date(a.createdAt || new Date()).getTime())
+            .slice(0, 5);
     }, [grades]);
 
-    const courseEnrollment = useMemo(() => {
-        return courses.map((c) => ({
-            name: c.code,
-            count: mockEnrollments.filter((e) => e.courseId === c.id).length,
-        }));
-    }, [courses]);
+    // ==== STUDENT RENDER ====
+    if (!isTeacher) {
+        const studentDetails = students[0] || user;
+        const studentGrades = grades; // In real app, only fetched their grades
 
-    const avgGrade = useMemo(() => {
-        if (!grades.length) return 0;
-        const avg = grades.reduce((sum, g) => sum + (g.score / g.maxScore) * 100, 0) / grades.length;
-        return Math.round(avg);
-    }, [grades]);
+        return (
+            <div className="dashboard">
+                <div className="page-header" style={{ alignItems: 'flex-start' }}>
+                    <div>
+                        <h1>My Record</h1>
+                        <p>Welcome back, {studentDetails?.displayName || studentDetails?.email || 'Student'}. Here are your academic records.</p>
+                    </div>
+                </div>
 
-    const topPerformers = useMemo(() => {
-        const studentScores: Record<string, { name: string; scores: number[]; id: string }> = {};
-        for (const g of grades) {
-            if (!studentScores[g.studentId]) {
-                const s = students.find((st) => st.id === g.studentId);
-                studentScores[g.studentId] = { name: s?.displayName || 'Unknown', scores: [], id: g.studentId };
-            }
-            studentScores[g.studentId].scores.push((g.score / g.maxScore) * 100);
-        }
-        return Object.values(studentScores)
-            .map((s) => ({ ...s, avg: Math.round(s.scores.reduce((a, b) => a + b, 0) / s.scores.length) }))
-            .sort((a, b) => b.avg - a.avg)
-            .slice(0, 3);
-    }, [grades, students]);
+                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                    <div className="table-wrapper" style={{ boxShadow: 'none', border: 'none', borderRadius: 0 }}>
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Score</th>
+                                    <th>Max Score</th>
+                                    <th>Grade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {studentGrades.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} style={{ textAlign: 'center', padding: '40px' }}>
+                                            <div style={{ color: 'var(--text-muted)' }}>No grades available yet.</div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    studentGrades.map(g => {
+                                        const c = courses.find(co => co.id === g.courseId);
+                                        const letter = getLetterGrade(g.score, g.maxScore);
+                                        return (
+                                            <tr key={g.id}>
+                                                <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c?.code || '—'}</td>
+                                                <td>{c?.name || 'Unknown Course'}</td>
+                                                <td>{g.score}</td>
+                                                <td>{g.maxScore}</td>
+                                                <td><span className={`badge badge-${letter}`}>{letter}</span></td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
-    const needsAttention = useMemo(() => {
-        const studentScores: Record<string, { name: string; scores: { score: number; maxScore: number; course: string }[] }> = {};
-        for (const g of grades) {
-            if (!studentScores[g.studentId]) {
-                const s = students.find((st) => st.id === g.studentId);
-                studentScores[g.studentId] = { name: s?.displayName || 'Unknown', scores: [] };
-            }
-            const c = courses.find((co) => co.id === g.courseId);
-            studentScores[g.studentId].scores.push({ score: g.score, maxScore: g.maxScore, course: c?.code || '' });
-        }
-        return Object.values(studentScores)
-            .map((s) => {
-                const avg = Math.round(s.scores.reduce((a, b) => a + (b.score / b.maxScore) * 100, 0) / s.scores.length);
-                const worst = s.scores.reduce((a, b) => (b.score / b.maxScore) < (a.score / a.maxScore) ? b : a);
-                return { ...s, avg, worstCourse: worst.course };
-            })
-            .filter((s) => s.avg < 80)
-            .sort((a, b) => a.avg - b.avg)
-            .slice(0, 3);
-    }, [grades, students, courses]);
-
+    // ==== TEACHER RENDER ====
     return (
         <div className="dashboard">
             <div className="page-header">
-                <h1>Dashboard</h1>
-                <p>Welcome back! Here's an overview of your classroom.</p>
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Welcome back! Here's an overview of your classroom.</p>
+                </div>
             </div>
 
             {/* Stat Cards */}
             <div className="dashboard-stats">
                 <StatCard
-                    icon="👥"
+                    icon={<svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>}
                     value={students.length}
                     label="Total Students"
                     sub={`${students.length} active`}
-                    color="var(--accent-purple)"
-                />
-                <StatCard
-                    icon="📖"
-                    value={courses.length}
-                    label="Total Courses"
-                    sub={`${mockEnrollments.length} enrollments`}
                     color="var(--accent-blue)"
                 />
                 <StatCard
-                    icon="🎓"
+                    icon={<svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>}
+                    value={courses.length}
+                    label="Total Courses"
+                    sub={`${mockEnrollments.length} enrollments`}
+                    color="var(--accent-purple-light)"
+                />
+                <StatCard
+                    icon={<svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>}
                     value={grades.length}
                     label="Grades Recorded"
                     sub="across all courses"
                     color="var(--accent-purple-light)"
                 />
                 <StatCard
-                    icon="📈"
-                    value={`${avgGrade}%`}
-                    label="Class Average"
-                    sub={getLetterGrade(avgGrade, 100)}
+                    icon={<svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>}
+                    value={recentGrades.length ? getLetterGrade(recentGrades[0].score, recentGrades[0].maxScore) : '—'}
+                    label="Latest Grade"
+                    sub="from recent activity"
                     color="var(--accent-green)"
                 />
             </div>
 
-            {/* Charts */}
-            <div className="dashboard-charts">
-                <div className="card chart-card">
-                    <div className="chart-header">
-                        <span className="chart-icon">📊</span>
-                        <h2 className="chart-title">Grade Distribution</h2>
-                    </div>
-                    <ResponsiveContainer width="100%" height={220}>
-                        <PieChart>
-                            <Pie
-                                data={gradeDistribution}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={90}
-                                paddingAngle={3}
-                                dataKey="value"
-                            >
-                                {gradeDistribution.map((entry) => (
-                                    <Cell key={entry.name} fill={GRADE_COLORS[entry.name] || '#8b5cf6'} />
-                                ))}
-                            </Pie>
-                            <Tooltip
-                                contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }}
-                            />
-                        </PieChart>
-                    </ResponsiveContainer>
-                    <div className="chart-legend">
-                        {gradeDistribution.map((d) => (
-                            <span key={d.name} className="legend-item">
-                                <span className="legend-dot" style={{ background: GRADE_COLORS[d.name] }} />
-                                {d.name} · {d.value}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="card chart-card">
-                    <div className="chart-header">
-                        <span className="chart-icon">📋</span>
-                        <h2 className="chart-title">Course Enrollment</h2>
-                    </div>
-                    <ResponsiveContainer width="100%" height={260}>
-                        <BarChart data={courseEnrollment} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                            <XAxis dataKey="name" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                            <Tooltip
-                                contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)' }}
-                            />
-                            <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            {/* Bottom panels */}
             <div className="dashboard-bottom">
-                <div className="card">
-                    <div className="panel-header">
-                        <div className="panel-title">
-                            <span>🏆</span>
-                            <h3>Top Performers</h3>
+                <div className="card" style={{ border: '1px solid var(--border)', boxShadow: 'none' }}>
+                    <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                        <div className="panel-title" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <svg width="20" height="20" fill="none" stroke="var(--accent-blue)" strokeWidth="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Recent Grades</h3>
                         </div>
-                        <Link to="/app/students" className="panel-link">View all →</Link>
+                        <Link to="/app/grades" className="btn btn-ghost btn-sm">View all →</Link>
                     </div>
-                    <div className="performers-list">
-                        {topPerformers.map((s, i) => (
-                            <div key={s.id} className="performer-row">
-                                <div className="performer-rank">{i + 1}</div>
-                                <div className="performer-info">
-                                    <div className="performer-name">{s.name}</div>
-                                    <div className="performer-meta" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                        {students.find((st) => st.id === s.id) ? `STU-00${i + 1}` : '—'}
-                                    </div>
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <div className="progress-bar">
-                                        <div className="progress-bar-fill" style={{ width: `${s.avg}%` }} />
-                                    </div>
-                                </div>
-                                <span className="badge badge-A">{s.avg}%</span>
-                            </div>
-                        ))}
-                    </div>
+                    
+                    <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ background: 'var(--bg-secondary)', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                <th style={{ padding: '12px' }}>Student</th>
+                                <th style={{ padding: '12px' }}>Course</th>
+                                <th style={{ padding: '12px' }}>Score</th>
+                                <th style={{ padding: '12px' }}>Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {recentGrades.length === 0 ? (
+                                <tr>
+                                    <td colSpan={4} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>No recent grades available.</td>
+                                </tr>
+                            ) : (
+                                recentGrades.map(g => {
+                                    const s = students.find(st => st.id === g.studentId);
+                                    const c = courses.find(co => co.id === g.courseId);
+                                    return (
+                                        <tr key={g.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                                            <td style={{ padding: '12px', fontWeight: 500 }}>{s?.displayName || 'Unknown'}</td>
+                                            <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{c?.code || '—'}</td>
+                                            <td style={{ padding: '12px' }}>{g.score}/{g.maxScore}</td>
+                                            <td style={{ padding: '12px' }}><span className={`badge badge-${getLetterGrade(g.score, g.maxScore)}`}>{getLetterGrade(g.score, g.maxScore)}</span></td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
                 </div>
 
-                <div className="card">
-                    <div className="panel-header">
-                        <div className="panel-title">
-                            <span style={{ color: 'var(--accent-red)' }}>⚠</span>
-                            <h3>Needs Attention</h3>
+                <div className="card" style={{ border: '1px solid var(--border)', boxShadow: 'none' }}>
+                    <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                        <div className="panel-title" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Active Courses Summary</h3>
                         </div>
-                        <Link to="/app/grades" className="panel-link">Manage grades →</Link>
+                        <Link to="/app/courses" className="btn btn-ghost btn-sm">Manage courses →</Link>
                     </div>
-                    <div className="attention-list">
-                        {needsAttention.length === 0 ? (
-                            <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                                🎉 All students performing well!
-                            </div>
+                    <div className="courses-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {courses.length === 0 ? (
+                            <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>No active courses found.</div>
                         ) : (
-                            needsAttention.map((s) => (
-                                <div key={s.name} className="attention-row">
-                                    <div className="avatar" style={{ background: 'rgba(239,68,68,0.2)', color: 'var(--accent-red)' }}>
-                                        {s.name[0]}
-                                    </div>
-                                    <div className="attention-info">
-                                        <div className="attention-name">{s.name}</div>
-                                        <div className="attention-meta">
-                                            Avg: {s.avg}% · Struggling in: {s.worstCourse}
-                                        </div>
-                                    </div>
-                                    <span className="badge badge-C">{getLetterGrade(s.avg, 100)}</span>
+                            courses.map(c => (
+                                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-secondary)', borderRadius: '6px' }}>
+                                    <div style={{ fontWeight: 600 }}>{c.code}</div>
+                                    <div style={{ color: 'var(--text-secondary)' }}>{c.title}</div>
                                 </div>
                             ))
                         )}

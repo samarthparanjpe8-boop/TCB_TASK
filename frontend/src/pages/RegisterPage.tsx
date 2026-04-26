@@ -44,7 +44,11 @@ export function RegisterPage() {
                     className="theme-toggle-btn"
                     onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
                 >
-                    {resolvedTheme === 'dark' ? '☀' : '🌙'}
+                    {resolvedTheme === 'dark' ? (
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    ) : (
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    )}
                 </button>
             </div>
 
@@ -60,7 +64,7 @@ export function RegisterPage() {
                 <div className="signin-card card">
                     {isDemoMode && (
                         <div className="demo-hint">
-                            <span className="demo-hint-icon">ℹ</span>
+                            <span className="demo-hint-icon"><svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
                             <div>
                                 <div className="demo-hint-title">Demo Mode</div>
                                 <div className="demo-hint-text">
@@ -74,7 +78,6 @@ export function RegisterPage() {
                         <div className="form-group">
                             <label className="form-label" htmlFor="reg-first">First name</label>
                             <div className="input-with-icon">
-                                <span className="input-icon">👤</span>
                                 <input
                                     id="reg-first"
                                     type="text"
@@ -90,7 +93,6 @@ export function RegisterPage() {
                         <div className="form-group">
                             <label className="form-label" htmlFor="reg-last">Last name</label>
                             <div className="input-with-icon">
-                                <span className="input-icon">👤</span>
                                 <input
                                     id="reg-last"
                                     type="text"
@@ -119,7 +121,6 @@ export function RegisterPage() {
                         <div className="form-group">
                             <label className="form-label" htmlFor="reg-email">Email address</label>
                             <div className="input-with-icon">
-                                <span className="input-icon">✉</span>
                                 <input
                                     id="reg-email"
                                     type="email"
@@ -135,7 +136,6 @@ export function RegisterPage() {
                         <div className="form-group">
                             <label className="form-label" htmlFor="reg-password">Password</label>
                             <div className="input-with-icon">
-                                <span className="input-icon">🔒</span>
                                 <input
                                     id="reg-password"
                                     type={showPass ? 'text' : 'password'}
@@ -154,7 +154,7 @@ export function RegisterPage() {
                                     onClick={() => setShowPass(!showPass)}
                                     tabIndex={-1}
                                 >
-                                    {showPass ? '🙈' : '👁'}
+                                    {showPass ? 'Hide' : 'Show'}
                                 </button>
                             </div>
                         </div>

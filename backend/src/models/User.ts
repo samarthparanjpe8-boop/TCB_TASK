@@ -9,6 +9,8 @@ const userSchema = new Schema(
     lastName: { type: String, default: "", trim: true },
     registrationMarks: { type: Number, default: null },
     role: { type: String, enum: ["teacher", "student"], required: true },
+    isApproved: { type: Boolean, default: true },
+    approvalToken: { type: String, default: null },
     archivedAt: { type: Date, default: null },
   },
   { timestamps: true }

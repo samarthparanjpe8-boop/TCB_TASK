@@ -13,6 +13,8 @@ export const config = {
   supabaseUrl: required("SUPABASE_URL").replace(/\/$/, ""),
   supabaseAnonKey: required("SUPABASE_ANON_KEY"),
   supabaseJwtSecret: required("SUPABASE_JWT_SECRET"),
+  frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:5173",
+  backendUrl: process.env.BACKEND_URL ?? "http://localhost:4000",
   teacherEmails: new Set(
     (process.env.TEACHER_EMAILS ?? "")
       .split(",")

@@ -36,7 +36,15 @@ studentsRouter.post(
     const em = email.trim().toLowerCase();
     const existing = await User.findOne({ email: em });
     if (existing && !existing.archivedAt) {
-      throw new HttpError(409, "A user with this email already exists");
+      if (existing.role === "teacher") {
+        throw new HttpError(409, "This email belongs to a teacher account.");
+      }
+      return res.status(200).json({
+        id: String(existing._id),
+        authId: existing.authId ?? null,
+        email: existing.email,
+        displayName: existing.displayName,
+      });
     }
     if (existing && existing.archivedAt) {
       existing.archivedAt = null;

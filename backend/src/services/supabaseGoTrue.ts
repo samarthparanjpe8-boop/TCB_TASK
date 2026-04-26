@@ -34,30 +34,38 @@ export async function goTrueSignup(body: {
   password: string;
   data: Record<string, unknown>;
 }): Promise<{ res: Response; data: GoTrueAuthResponse }> {
-  const res = await fetch(`${config.supabaseUrl}/auth/v1/signup`, {
+  const adminRes = await fetch(`${config.supabaseUrl}/auth/v1/admin/users`, {
     method: "POST",
-    headers: jsonHeaders,
+    headers: {
+      apikey: config.supabaseJwtSecret,
+      Authorization: `Bearer ${config.supabaseJwtSecret}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       email: body.email,
       password: body.password,
-      data: body.data,
+      email_confirm: true,
+      user_metadata: body.data,
     }),
   });
-  const data = (await res.json()) as GoTrueAuthResponse;
-  return { res, data };
+  if (!adminRes.ok) {
+    const errorData = (await adminRes.json()) as GoTrueAuthResponse;
+    return { res: adminRes, data: errorData };
+  }
+  return goTruePasswordGrant(body.email, body.password);
 }
 
 export async function goTrueRecover(
   email: string,
   redirectTo?: string
 ): Promise<{ res: Response; data: GoTrueAuthResponse }> {
-  const res = await fetch(`${config.supabaseUrl}/auth/v1/recover`, {
+  const url = new URL(`${config.supabaseUrl}/auth/v1/recover`);
+  if (redirectTo) url.searchParams.set("redirect_to", redirectTo);
+
+  const res = await fetch(url.toString(), {
     method: "POST",
     headers: jsonHeaders,
-    body: JSON.stringify({
-      email,
-      ...(redirectTo ? { redirect_to: redirectTo } : {}),
-    }),
+    body: JSON.stringify({ email }),
   });
   const data = (await res.json()) as GoTrueAuthResponse;
   return { res, data };

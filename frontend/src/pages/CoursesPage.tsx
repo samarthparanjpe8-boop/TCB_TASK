@@ -4,8 +4,8 @@ import { Modal } from '../components/Modal';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { api, isDemoMode } from '../lib/api';
-import { mockCourses, mockEnrollments } from '../lib/mockData';
-import type { Course } from '../types';
+import { mockCourses, mockEnrollments, mockStudents } from '../lib/mockData';
+import type { Course, Student } from '../types';
 
 let localCourses = [...mockCourses];
 
@@ -13,10 +13,13 @@ export function CoursesPage() {
     const { user } = useAuth();
     const isTeacher = user?.role === 'teacher';
     const [courses, setCourses] = useState<Course[]>(isDemoMode ? [...localCourses] : []);
+    const [students, setStudents] = useState<Student[]>(isDemoMode ? mockStudents : []);
     const [loading, setLoading] = useState(!isDemoMode);
     const [addOpen, setAddOpen] = useState(false);
     const [editCourse, setEditCourse] = useState<Course | null>(null);
     const [deleteCourse, setDeleteCourse] = useState<Course | null>(null);
+    const [enrollCourse, setEnrollCourse] = useState<Course | null>(null);
+    const [enrollStudentId, setEnrollStudentId] = useState('');
     const [form, setForm] = useState({ title: '', code: '', description: '' });
     const { showToast } = useToast();
 
@@ -24,10 +27,15 @@ export function CoursesPage() {
         if (isDemoMode) return;
         setLoading(true);
         api.get<Course[]>('/courses')
-            .then(({ data }) => setCourses(data))
+            .then(({ data }) => {
+                setCourses(data);
+                if (isTeacher) {
+                    api.get<Student[]>('/students').then((res) => setStudents(res.data)).catch(console.error);
+                }
+            })
             .catch(() => showToast('Failed to load courses', 'error'))
             .finally(() => setLoading(false));
-    }, []);
+    }, [isTeacher, showToast]);
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -77,6 +85,19 @@ export function CoursesPage() {
         } catch { showToast('Failed to delete course', 'error'); }
     };
 
+    const handleEnroll = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!enrollCourse || !enrollStudentId) return;
+        try {
+            if (!isDemoMode) {
+                await api.post(`/courses/${enrollCourse.id}/enrollments`, { studentId: enrollStudentId });
+            }
+            showToast('Student enrolled successfully');
+            setEnrollCourse(null);
+            setEnrollStudentId('');
+        } catch { showToast('Failed to enroll student', 'error'); }
+    };
+
     return (
         <div>
             <div className="page-header">
@@ -114,8 +135,9 @@ export function CoursesPage() {
                                     </span>
                                     {isTeacher && (
                                         <div style={{ display: 'flex', gap: 6 }}>
-                                            <button className="btn btn-ghost btn-sm" onClick={() => { setEditCourse(c); setForm({ title: c.title, code: c.code, description: c.description }); }}>✏</button>
-                                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteCourse(c)}>🗑</button>
+                                            <button className="btn btn-ghost btn-sm" onClick={() => setEnrollCourse(c)} title="Enroll Student">👥</button>
+                                            <button className="btn btn-ghost btn-sm" onClick={() => { setEditCourse(c); setForm({ title: c.title, code: c.code, description: c.description }); }}><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteCourse(c)}><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                                         </div>
                                     )}
                                 </div>
@@ -176,6 +198,25 @@ export function CoursesPage() {
                     <button className="btn btn-outline btn-sm" onClick={() => setDeleteCourse(null)}>Cancel</button>
                     <button className="btn btn-danger btn-sm" onClick={handleDelete}>Delete Course</button>
                 </div>
+            </Modal>
+
+            <Modal isOpen={isTeacher && !!enrollCourse} onClose={() => setEnrollCourse(null)} title="Enroll Student">
+                <form onSubmit={handleEnroll} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: 10, fontSize: '0.9rem' }}>
+                        Enroll a student into <strong>{enrollCourse?.title}</strong>.
+                    </p>
+                    <div className="form-group">
+                        <label className="form-label">Student *</label>
+                        <select className="form-input" value={enrollStudentId} onChange={(e) => setEnrollStudentId(e.target.value)} required>
+                            <option value="">Select student</option>
+                            {students.map((s) => <option key={s.id} value={s.id}>{s.displayName} ({s.email})</option>)}
+                        </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
+                        <button type="button" className="btn btn-outline btn-sm" onClick={() => setEnrollCourse(null)}>Cancel</button>
+                        <button type="submit" className="btn btn-primary btn-sm">Enroll Student</button>
+                    </div>
+                </form>
             </Modal>
         </div>
     );

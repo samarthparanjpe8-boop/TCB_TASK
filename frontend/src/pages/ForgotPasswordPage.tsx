@@ -46,14 +46,18 @@ export function ForgotPasswordPage() {
                     className="theme-toggle-btn"
                     onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
                 >
-                    {resolvedTheme === 'dark' ? '☀' : '🌙'}
+                    {resolvedTheme === 'dark' ? (
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    ) : (
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    )}
                 </button>
             </div>
 
             <div className="signin-center">
                 <div className="signin-logo">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </div>
                 <h1 className="signin-title">Reset your password</h1>
@@ -64,7 +68,6 @@ export function ForgotPasswordPage() {
                         <div className="form-group">
                             <label className="form-label">Email address</label>
                             <div className="input-with-icon">
-                                <span className="input-icon">✉</span>
                                 <input
                                     type="email"
                                     className="form-input"

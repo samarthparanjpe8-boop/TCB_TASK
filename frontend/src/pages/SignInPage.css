@@ -24,13 +24,12 @@
 .signin-logo {
     width: 60px;
     height: 60px;
-    border-radius: 16px;
+    border-radius: var(--radius-sm);
     background: var(--accent-grad);
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 20px;
-    box-shadow: 0 10px 26px rgba(90, 82, 236, 0.45);
 }
 
 .signin-title {
@@ -49,8 +48,6 @@
     width: 100%;
     max-width: 460px;
     background: var(--bg-card);
-    backdrop-filter: blur(14px) saturate(130%);
-    -webkit-backdrop-filter: blur(14px) saturate(130%);
 }
 
 .demo-hint {
@@ -66,7 +63,8 @@
 
 .demo-hint-icon {
     color: var(--accent-blue);
-    font-size: 1rem;
+    display: flex;
+    align-items: center;
     flex-shrink: 0;
     margin-top: 1px;
 }
@@ -96,20 +94,6 @@
     position: relative;
 }
 
-.input-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    pointer-events: none;
-}
-
-.input-with-icon .form-input {
-    padding-left: 38px;
-}
-
 .pass-toggle {
     position: absolute;
     right: 12px;
@@ -119,7 +103,8 @@
     border: none;
     color: var(--text-muted);
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
+    font-weight: 600;
     padding: 4px;
 }
 

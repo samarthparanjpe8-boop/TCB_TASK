@@ -1,0 +1,51 @@
+services:
+  # Backend Express API
+  - type: web
+    name: classroom-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: MONGODB_URI
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: classroom-frontend
+          property: url
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: classroom-backend
+          property: url
+
+  # Frontend Vite App
+  - type: web
+    name: classroom-frontend
+    env: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    staticPublishCustomRoutes:
+      - type: rewrite
+        from: /*
+        to: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: classroom-backend
+          property: url

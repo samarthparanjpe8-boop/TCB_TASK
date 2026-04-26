@@ -135,5 +135,8 @@ export function requireTeacher(req: Request, res: Response, next: NextFunction) 
   if (req.authUser.role !== "teacher") {
     return res.status(403).json({ error: "Teacher role required" });
   }
+  if (req.authUser.isApproved === false) {
+    return res.status(403).json({ error: "Teacher account pending approval" });
+  }
   next();
 }
