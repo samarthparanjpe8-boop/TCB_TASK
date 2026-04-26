@@ -32,14 +32,13 @@ services:
           property: url
 
   # Frontend Vite App
-  - type: web
+  - type: static_site
     name: classroom-frontend
-    env: static
     plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
     publishDir: dist
-    staticPublishCustomRoutes:
+    routes:
       - type: rewrite
         from: /*
         to: /index.html
