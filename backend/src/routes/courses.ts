@@ -16,7 +16,7 @@ coursesRouter.get(
   asyncHandler(async (req, res) => {
     const u = req.authUser!;
     if (u.role === "teacher") {
-      const list = await Course.find({ teacherId: u._id }).sort({ code: 1 }).lean();
+      const list = await Course.find({}).sort({ code: 1 }).lean();
       return res.json(
         list.map((c) => ({
           id: String(c._id),
@@ -78,11 +78,8 @@ coursesRouter.get(
   asyncHandler(async (req, res) => {
     const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId, "courseId");
-    const course = await Course.findById(courseId);
-    if (!course) throw new HttpError(404, "Course not found");
-    if (u.role === "teacher") {
-      if (!course.teacherId.equals(u._id)) throw new HttpError(403, "Not allowed");
-    } else {
+    const course = await getCourseOrThrow(courseId);
+    if (u.role !== "teacher") {
       await assertStudentCanViewCourse(courseId, u);
     }
     res.json({
@@ -101,9 +98,8 @@ coursesRouter.patch(
   "/:courseId",
   requireTeacher,
   asyncHandler(async (req, res) => {
-    const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId, "courseId");
-    const course = await getCourseForTeacherOrThrow(courseId, u);
+    const course = await getCourseOrThrow(courseId);
     const { title, code, description } = req.body as {
       title?: string;
       code?: string;
@@ -127,9 +123,8 @@ coursesRouter.delete(
   "/:courseId",
   requireTeacher,
   asyncHandler(async (req, res) => {
-    const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId, "courseId");
-    await getCourseForTeacherOrThrow(courseId, u);
+    await getCourseOrThrow(courseId);
     await Enrollment.deleteMany({ courseId });
     await Grade.deleteMany({ courseId });
     await Attendance.deleteMany({ courseId });

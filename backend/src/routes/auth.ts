@@ -88,7 +88,8 @@ authRouter.post(
 
     const role = requestedRole === "teacher" ? "teacher" : resolveRole(email);
     const isTeacher = role === "teacher";
-    const approvalToken = isTeacher ? randomBytes(32).toString("hex") : null;
+    const isApproved = isTeacher ? config.teacherEmails.has(email) : true;
+    const approvalToken = isTeacher && !isApproved ? randomBytes(32).toString("hex") : null;
 
     const user = await User.findOneAndUpdate(
       { email },
@@ -101,13 +102,13 @@ authRouter.post(
           lastName,
           role,
           archivedAt: null,
-          ...(isTeacher ? { isApproved: false, approvalToken } : {}),
+          ...(isTeacher ? { isApproved, approvalToken } : {}),
         },
       },
       { upsert: true, new: true }
     );
 
-    if (isTeacher && user) {
+    if (isTeacher && !isApproved && user) {
       // Send email to admin
       const baseUrl = `${req.protocol}://${req.get("host")}`;
       await sendTeacherApprovalEmail(email, String(user._id), approvalToken!, baseUrl);

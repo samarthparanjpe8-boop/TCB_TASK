@@ -5,7 +5,7 @@ import { Grade } from "../models/Grade.js";
 import { parseObjectId } from "../lib/mongoId.js";
 import { HttpError } from "../lib/httpErrors.js";
 import {
-  getCourseForTeacherOrThrow,
+  getCourseOrThrow,
   assertStudentCanViewCourse,
   assertStudentEnrolled,
 } from "../services/courseAccess.js";
@@ -18,7 +18,7 @@ gradesRouter.get(
     const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId as string, "courseId");
     if (u.role === "teacher") {
-      await getCourseForTeacherOrThrow(courseId, u);
+      await getCourseOrThrow(courseId);
       const list = await Grade.find({ courseId, deletedAt: null }).sort({ updatedAt: -1 }).lean();
       return res.json(
         list.map((g) => ({
@@ -63,7 +63,7 @@ gradesRouter.post(
   asyncHandler(async (req, res) => {
     const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId as string, "courseId");
-    await getCourseForTeacherOrThrow(courseId, u);
+    await getCourseOrThrow(courseId);
     const { studentId, assignmentName, score, maxScore } = req.body as {
       studentId?: string;
       assignmentName?: string;
@@ -102,7 +102,7 @@ gradesRouter.patch(
   asyncHandler(async (req, res) => {
     const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId as string, "courseId");
-    await getCourseForTeacherOrThrow(courseId, u);
+    await getCourseOrThrow(courseId);
     const gradeId = parseObjectId(req.params.gradeId, "gradeId");
     const g = await Grade.findOne({ _id: gradeId, courseId, deletedAt: null });
     if (!g) throw new HttpError(404, "Grade not found");
@@ -133,7 +133,7 @@ gradesRouter.delete(
   asyncHandler(async (req, res) => {
     const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId as string, "courseId");
-    await getCourseForTeacherOrThrow(courseId, u);
+    await getCourseOrThrow(courseId);
     const gradeId = parseObjectId(req.params.gradeId, "gradeId");
     const g = await Grade.findOne({ _id: gradeId, courseId, deletedAt: null });
     if (!g) throw new HttpError(404, "Grade not found");

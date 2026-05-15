@@ -16,6 +16,14 @@ export async function getCourseForTeacherOrThrow(
   return course;
 }
 
+export async function getCourseOrThrow(
+  courseId: mongoose.Types.ObjectId
+): Promise<HydratedDocument<ICourse>> {
+  const course = await Course.findById(courseId);
+  if (!course) throw new HttpError(404, "Course not found");
+  return course;
+}
+
 export async function assertStudentEnrolled(
   courseId: mongoose.Types.ObjectId,
   studentId: mongoose.Types.ObjectId

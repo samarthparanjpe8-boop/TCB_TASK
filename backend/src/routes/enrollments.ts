@@ -5,7 +5,7 @@ import { Enrollment } from "../models/Enrollment.js";
 import { User } from "../models/User.js";
 import { parseObjectId } from "../lib/mongoId.js";
 import { HttpError } from "../lib/httpErrors.js";
-import { getCourseForTeacherOrThrow, assertStudentCanViewCourse } from "../services/courseAccess.js";
+import { getCourseOrThrow, assertStudentCanViewCourse } from "../services/courseAccess.js";
 
 export const enrollmentsRouter = Router({ mergeParams: true });
 
@@ -15,7 +15,7 @@ enrollmentsRouter.get(
     const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId as string, "courseId");
     if (u.role === "teacher") {
-      await getCourseForTeacherOrThrow(courseId, u);
+      await getCourseOrThrow(courseId);
       const list = await Enrollment.find({ courseId }).populate("studentId").lean();
       return res.json(
         list.map((e) => {
@@ -53,7 +53,7 @@ enrollmentsRouter.post(
   asyncHandler(async (req, res) => {
     const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId as string, "courseId");
-    await getCourseForTeacherOrThrow(courseId, u);
+    await getCourseOrThrow(courseId);
     const { studentId } = req.body as { studentId?: string };
     if (!studentId) throw new HttpError(400, "studentId is required");
     const sid = parseObjectId(studentId, "studentId");
@@ -79,7 +79,7 @@ enrollmentsRouter.delete(
   asyncHandler(async (req, res) => {
     const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId as string, "courseId");
-    await getCourseForTeacherOrThrow(courseId, u);
+    await getCourseOrThrow(courseId);
     const eid = parseObjectId(req.params.enrollmentId, "enrollmentId");
     const en = await Enrollment.findOne({ _id: eid, courseId });
     if (!en) throw new HttpError(404, "Enrollment not found");

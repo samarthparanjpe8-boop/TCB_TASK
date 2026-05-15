@@ -6,7 +6,7 @@ import { parseObjectId } from "../lib/mongoId.js";
 import { HttpError } from "../lib/httpErrors.js";
 import { utcDayStart } from "../lib/date.js";
 import {
-  getCourseForTeacherOrThrow,
+  getCourseOrThrow,
   assertStudentCanViewCourse,
   assertStudentEnrolled,
 } from "../services/courseAccess.js";
@@ -22,7 +22,7 @@ attendanceRouter.get(
     const courseId = parseObjectId(req.params.courseId as string, "courseId");
     const { from, to } = req.query as { from?: string; to?: string };
     if (u.role === "teacher") {
-      await getCourseForTeacherOrThrow(courseId, u);
+      await getCourseOrThrow(courseId);
       const q: Record<string, unknown> = { courseId, deletedAt: null };
       if (from && to) {
         q.date = { $gte: utcDayStart(from), $lte: utcDayStart(to) };
@@ -67,7 +67,7 @@ attendanceRouter.post(
   asyncHandler(async (req, res) => {
     const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId as string, "courseId");
-    await getCourseForTeacherOrThrow(courseId, u);
+    await getCourseOrThrow(courseId);
     const { studentId, date, status } = req.body as {
       studentId?: string;
       date?: string;
@@ -114,7 +114,7 @@ attendanceRouter.patch(
   asyncHandler(async (req, res) => {
     const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId as string, "courseId");
-    await getCourseForTeacherOrThrow(courseId, u);
+    await getCourseOrThrow(courseId);
     const aid = parseObjectId(req.params.attendanceId, "attendanceId");
     const a = await Attendance.findOne({ _id: aid, courseId, deletedAt: null });
     if (!a) throw new HttpError(404, "Attendance not found");
@@ -155,7 +155,7 @@ attendanceRouter.delete(
   asyncHandler(async (req, res) => {
     const u = req.authUser!;
     const courseId = parseObjectId(req.params.courseId as string, "courseId");
-    await getCourseForTeacherOrThrow(courseId, u);
+    await getCourseOrThrow(courseId);
     const aid = parseObjectId(req.params.attendanceId, "attendanceId");
     const a = await Attendance.findOne({ _id: aid, courseId, deletedAt: null });
     if (!a) throw new HttpError(404, "Attendance not found");
