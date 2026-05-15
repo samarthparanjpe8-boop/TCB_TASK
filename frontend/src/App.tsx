@@ -1,10 +1,8 @@
-// src/App.tsx
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
-import { AppLayout } from './components/AppLayout';
+import { AppLayout } from './components/layout/AppLayout';
+import { PageLoader } from './components/ui/Spinner';
 import { LandingPage } from './pages/LandingPage';
 import { SignInPage } from './pages/SignInPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -18,20 +16,14 @@ import { AcademicRecordsPage } from './pages/AcademicRecordsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { user, isLoading } = useAuth();
-    if (isLoading) {
-        return (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-                <div className="spinner" />
-            </div>
-        );
-    }
+    if (isLoading) return <PageLoader />;
     if (!user) return <Navigate to="/sign-in" replace />;
     return <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
     const { user, isLoading } = useAuth();
-    if (isLoading) return null;
+    if (isLoading) return <PageLoader />;
     if (user) return <Navigate to="/app" replace />;
     return <>{children}</>;
 }
@@ -50,10 +42,7 @@ function AppRoutes() {
             <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route
-                path="/app"
-                element={<ProtectedRoute><AppLayout /></ProtectedRoute>}
-            >
+            <Route path="/app" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 <Route index element={<DashboardPage />} />
                 <Route path="students" element={<TeacherRoute><StudentsPage /></TeacherRoute>} />
                 <Route path="courses" element={<CoursesPage />} />
@@ -68,13 +57,11 @@ function AppRoutes() {
 export default function App() {
     return (
         <BrowserRouter>
-            <ThemeProvider>
-                <AuthProvider>
-                    <ToastProvider>
-                        <AppRoutes />
-                    </ToastProvider>
-                </AuthProvider>
-            </ThemeProvider>
+            <AuthProvider>
+                <ToastProvider>
+                    <AppRoutes />
+                </ToastProvider>
+            </AuthProvider>
         </BrowserRouter>
     );
 }

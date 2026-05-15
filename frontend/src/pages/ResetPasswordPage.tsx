@@ -1,8 +1,11 @@
-import React, { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api, isDemoMode } from '../lib/api';
-import { useTheme } from '../contexts/ThemeContext';
-import './SignInPage.css';
+import { AuthLayout } from '../components/layout/AuthLayout';
+import { Card } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
+import { Alert } from '../components/ui/Alert';
 
 function readAccessTokenFromUrl(): string {
     const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
@@ -19,7 +22,6 @@ export function ResetPasswordPage() {
     const [showPass, setShowPass] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const { resolvedTheme, setTheme } = useTheme();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -34,7 +36,7 @@ export function ResetPasswordPage() {
             return;
         }
         if (!token) {
-            setError('Reset token is missing. Please open the reset link from your email again.');
+            setError('Reset token is missing. Open the reset link from your email again.');
             return;
         }
         if (isDemoMode) {
@@ -54,78 +56,20 @@ export function ResetPasswordPage() {
     };
 
     return (
-        <div className="signin-page">
-            <div className="signin-top-bar">
-                <Link to="/sign-in" className="btn btn-ghost" style={{ fontSize: '0.85rem' }}>
-                    ← Back to sign in
-                </Link>
-                <button
-                    type="button"
-                    className="theme-toggle-btn"
-                    onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-                >
-                    {resolvedTheme === 'dark' ? '☀' : '🌙'}
-                </button>
-            </div>
-
-            <div className="signin-center">
-                <div className="signin-logo">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </div>
-                <h1 className="signin-title">Set a new password</h1>
-                <p className="signin-sub">Use a strong password you have not used before.</p>
-
-                <div className="signin-card card">
-                    <form onSubmit={handleSubmit} className="signin-form">
-                        <div className="form-group">
-                            <label className="form-label">New password</label>
-                            <div className="input-with-icon">
-                                <span className="input-icon">🔒</span>
-                                <input
-                                    type={showPass ? 'text' : 'password'}
-                                    className="form-input"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    minLength={6}
-                                    autoComplete="new-password"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Confirm password</label>
-                            <div className="input-with-icon">
-                                <span className="input-icon">🔒</span>
-                                <input
-                                    type={showPass ? 'text' : 'password'}
-                                    className="form-input"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    required
-                                    minLength={6}
-                                    autoComplete="new-password"
-                                />
-                                <button
-                                    type="button"
-                                    className="pass-toggle"
-                                    onClick={() => setShowPass((p) => !p)}
-                                    tabIndex={-1}
-                                >
-                                    {showPass ? '🙈' : '👁'}
-                                </button>
-                            </div>
-                        </div>
-
-                        {error && <div className="signin-error">{error}</div>}
-                        <button type="submit" className="btn btn-primary signin-btn" disabled={isLoading}>
-                            {isLoading ? <span className="pulse">Updating password…</span> : 'Update password'}
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
+        <AuthLayout title="Set a new password" subtitle="Choose a strong password you have not used before" backTo="/sign-in" backLabel="Back to sign in">
+            <Card>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <Input label="New password" type={showPass ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} autoComplete="new-password" />
+                    <Input label="Confirm password" type={showPass ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} autoComplete="new-password" />
+                    <button type="button" onClick={() => setShowPass(!showPass)} className="text-xs text-neutral-500 hover:text-neutral-300">
+                        {showPass ? 'Hide' : 'Show'} passwords
+                    </button>
+                    {error && <Alert variant="error">{error}</Alert>}
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? 'Updating…' : 'Update password'}
+                    </Button>
+                </form>
+            </Card>
+        </AuthLayout>
     );
 }

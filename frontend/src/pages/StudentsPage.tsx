@@ -1,6 +1,13 @@
-// src/pages/StudentsPage.tsx
-import React, { useState, useEffect } from 'react';
-import { Modal } from '../components/Modal';
+import { useState, useEffect } from 'react';
+import { Modal } from '../components/ui/Modal';
+import { PageHeader } from '../components/PageHeader';
+import { Card } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
+import { Avatar } from '../components/ui/Avatar';
+import { Spinner } from '../components/ui/Spinner';
+import { EmptyState } from '../components/ui/EmptyState';
+import { TableScroll } from '../components/ui/Table';
 import { useToast } from '../contexts/ToastContext';
 import { api, isDemoMode } from '../lib/api';
 import { mockStudents } from '../lib/mockData';
@@ -19,20 +26,29 @@ export function StudentsPage() {
     const { showToast } = useToast();
 
     const load = async () => {
-        if (isDemoMode) { setStudents([...localStudents]); return; }
+        if (isDemoMode) {
+            setStudents([...localStudents]);
+            return;
+        }
         setLoading(true);
         try {
             const { data } = await api.get<Student[]>('/students');
             setStudents(data);
-        } catch { showToast('Failed to load students', 'error'); }
-        finally { setLoading(false); }
+        } catch {
+            showToast('Failed to load students', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    useEffect(() => { load(); }, []);
+    useEffect(() => {
+        load();
+    }, []);
 
-    const filtered = students.filter((s) =>
-        s.displayName.toLowerCase().includes(search.toLowerCase()) ||
-        s.email.toLowerCase().includes(search.toLowerCase())
+    const filtered = students.filter(
+        (s) =>
+            s.displayName.toLowerCase().includes(search.toLowerCase()) ||
+            s.email.toLowerCase().includes(search.toLowerCase())
     );
 
     const handleAdd = async (e: React.FormEvent) => {
@@ -44,10 +60,7 @@ export function StudentsPage() {
                 setStudents([...localStudents]);
             } else {
                 const { data } = await api.post<Student>('/students', form);
-                setStudents((prev) => {
-                    if (prev.some(s => s.id === data.id)) return prev;
-                    return [...prev, data];
-                });
+                setStudents((prev) => (prev.some((s) => s.id === data.id) ? prev : [...prev, data]));
             }
             showToast(`${form.displayName} added successfully`);
             setAddOpen(false);
@@ -62,15 +75,17 @@ export function StudentsPage() {
         if (!editStudent) return;
         try {
             if (isDemoMode) {
-                localStudents = localStudents.map((s) => s.id === editStudent.id ? { ...s, displayName: form.displayName } : s);
+                localStudents = localStudents.map((s) => (s.id === editStudent.id ? { ...s, displayName: form.displayName } : s));
                 setStudents([...localStudents]);
             } else {
                 await api.patch(`/students/${editStudent.id}`, { displayName: form.displayName });
-                setStudents((prev) => prev.map((s) => s.id === editStudent.id ? { ...s, displayName: form.displayName } : s));
+                setStudents((prev) => prev.map((s) => (s.id === editStudent.id ? { ...s, displayName: form.displayName } : s)));
             }
             showToast('Student updated');
             setEditStudent(null);
-        } catch { showToast('Failed to update student', 'error'); }
+        } catch {
+            showToast('Failed to update student', 'error');
+        }
     };
 
     const handleDelete = async () => {
@@ -85,118 +100,108 @@ export function StudentsPage() {
             }
             showToast('Student removed', 'info');
             setDeleteStudent(null);
-        } catch { showToast('Failed to delete student', 'error'); }
+        } catch {
+            showToast('Failed to delete student', 'error');
+        }
     };
 
     return (
         <div>
-            <div className="page-header">
-                <h1>Students</h1>
-                <p>Manage all enrolled students and their profiles.</p>
-            </div>
+            <PageHeader
+                title="Students"
+                description="Manage all enrolled students and their profiles."
+                action={
+                    <Button size="sm" onClick={() => { setForm({ email: '', displayName: '' }); setAddOpen(true); }}>
+                        Add student
+                    </Button>
+                }
+            />
 
-            <div className="card">
-                <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center' }}>
-                    <input
-                        className="form-input"
-                        style={{ maxWidth: 300 }}
-                        placeholder="🔍  Search students…"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                    <button className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { setForm({ email: '', displayName: '' }); setAddOpen(true); }}>
-                        + Add Student
-                    </button>
+            <Card>
+                <div className="mb-6">
+                    <Input placeholder="Search students…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
                 </div>
 
                 {loading ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><div className="spinner" /></div>
-                ) : filtered.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-state-icon">👥</div>
-                        <h3>No students found</h3>
-                        <p>Add your first student to get started.</p>
+                    <div className="flex justify-center py-16">
+                        <Spinner size="lg" />
                     </div>
+                ) : filtered.length === 0 ? (
+                    <EmptyState
+                        title="No students found"
+                        description="Add your first student to get started."
+                        icon={
+                            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8" strokeLinecap="round" />
+                            </svg>
+                        }
+                    />
                 ) : (
-                    <div className="table-wrapper">
-                        <table className="data-table">
+                    <TableScroll>
+                        <table className="w-full text-sm">
                             <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Actions</th>
+                                <tr className="border-b border-neutral-800 text-left text-xs uppercase tracking-wider text-neutral-500">
+                                    <th className="pb-3 font-medium">Name</th>
+                                    <th className="pb-3 font-medium">Email</th>
+                                    <th className="pb-3 font-medium text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filtered.map((s) => (
-                                    <tr key={s.id}>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                <div className="avatar" style={{ background: 'var(--accent-purple)', color: '#fff' }}>
-                                                    {s.displayName[0]}
-                                                </div>
-                                                <span style={{ fontWeight: 600 }}>{s.displayName}</span>
+                                    <tr key={s.id} className="border-b border-neutral-800/50 transition-colors hover:bg-white/[0.02]">
+                                        <td className="py-3.5">
+                                            <div className="flex items-center gap-3">
+                                                <Avatar name={s.displayName} />
+                                                <span className="font-medium text-white">{s.displayName}</span>
                                             </div>
                                         </td>
-                                        <td style={{ color: 'var(--text-secondary)' }}>{s.email}</td>
-                                        <td>
-                                            <div style={{ display: 'flex', gap: 8 }}>
-                                                <button className="btn btn-ghost btn-sm" onClick={() => { setEditStudent(s); setForm({ email: s.email, displayName: s.displayName }); }}>
-                                                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit
-                                                </button>
-                                                <button className="btn btn-danger btn-sm" onClick={() => setDeleteStudent(s)}>
-                                                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Remove
-                                                </button>
+                                        <td className="py-3.5 text-neutral-500">{s.email}</td>
+                                        <td className="py-3.5">
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="ghost" size="sm" onClick={() => { setEditStudent(s); setForm({ email: s.email, displayName: s.displayName }); }}>
+                                                    Edit
+                                                </Button>
+                                                <Button variant="danger" size="sm" onClick={() => setDeleteStudent(s)}>
+                                                    Remove
+                                                </Button>
                                             </div>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-                    </div>
+                    </TableScroll>
                 )}
-            </div>
+            </Card>
 
-            {/* Add Modal */}
-            <Modal isOpen={addOpen} onClose={() => setAddOpen(false)} title="Add New Student">
-                <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div className="form-group">
-                        <label className="form-label">Display Name *</label>
-                        <input className="form-input" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required placeholder="e.g. Alice Johnson" />
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Email *</label>
-                        <input className="form-input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required placeholder="alice@school.edu" />
-                    </div>
-                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                        <button type="button" className="btn btn-outline btn-sm" onClick={() => setAddOpen(false)}>Cancel</button>
-                        <button type="submit" className="btn btn-primary btn-sm">Add Student</button>
+            <Modal isOpen={addOpen} onClose={() => setAddOpen(false)} title="Add student">
+                <form onSubmit={handleAdd} className="space-y-4">
+                    <Input label="Display name" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required placeholder="Alice Johnson" />
+                    <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required placeholder="alice@school.edu" />
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => setAddOpen(false)}>Cancel</Button>
+                        <Button type="submit" size="sm">Add student</Button>
                     </div>
                 </form>
             </Modal>
 
-            {/* Edit Modal */}
-            <Modal isOpen={!!editStudent} onClose={() => setEditStudent(null)} title="Edit Student">
-                <form onSubmit={handleEdit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div className="form-group">
-                        <label className="form-label">Display Name *</label>
-                        <input className="form-input" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required />
-                    </div>
-                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                        <button type="button" className="btn btn-outline btn-sm" onClick={() => setEditStudent(null)}>Cancel</button>
-                        <button type="submit" className="btn btn-primary btn-sm">Save Changes</button>
+            <Modal isOpen={!!editStudent} onClose={() => setEditStudent(null)} title="Edit student">
+                <form onSubmit={handleEdit} className="space-y-4">
+                    <Input label="Display name" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required />
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => setEditStudent(null)}>Cancel</Button>
+                        <Button type="submit" size="sm">Save changes</Button>
                     </div>
                 </form>
             </Modal>
 
-            {/* Delete Confirm */}
-            <Modal isOpen={!!deleteStudent} onClose={() => setDeleteStudent(null)} title="Remove Student" width={400}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: 20 }}>
-                    Are you sure you want to remove <strong>{deleteStudent?.displayName}</strong>? This cannot be undone.
+            <Modal isOpen={!!deleteStudent} onClose={() => setDeleteStudent(null)} title="Remove student" width="sm">
+                <p className="mb-6 text-sm text-neutral-500">
+                    Remove <span className="text-white">{deleteStudent?.displayName}</span>? This cannot be undone.
                 </p>
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                    <button className="btn btn-outline btn-sm" onClick={() => setDeleteStudent(null)}>Cancel</button>
-                    <button className="btn btn-danger btn-sm" onClick={handleDelete}>Remove Student</button>
+                <div className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setDeleteStudent(null)}>Cancel</Button>
+                    <Button variant="primary" size="sm" onClick={handleDelete}>Remove</Button>
                 </div>
             </Modal>
         </div>

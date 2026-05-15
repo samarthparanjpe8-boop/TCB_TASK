@@ -1,10 +1,13 @@
-// src/pages/RegisterPage.tsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 import { isDemoMode } from '../lib/api';
-import './SignInPage.css';
+import { AuthLayout } from '../components/layout/AuthLayout';
+import { Card } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
+import { Button } from '../components/ui/Button';
+import { Alert } from '../components/ui/Alert';
 
 export function RegisterPage() {
     const [email, setEmail] = useState('');
@@ -16,7 +19,6 @@ export function RegisterPage() {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { register } = useAuth();
-    const { resolvedTheme, setTheme } = useTheme();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -34,153 +36,62 @@ export function RegisterPage() {
     };
 
     return (
-        <div className="signin-page">
-            <div className="signin-top-bar">
-                <Link to="/" className="btn btn-ghost" style={{ fontSize: '0.85rem' }}>
-                    ← Back to home
-                </Link>
-                <button
-                    type="button"
-                    className="theme-toggle-btn"
-                    onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-                >
-                    {resolvedTheme === 'dark' ? (
-                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                    ) : (
-                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-                    )}
-                </button>
-            </div>
-
-            <div className="signin-center">
-                <div className="signin-logo">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </div>
-                <h1 className="signin-title">Create your account</h1>
-                <p className="signin-sub">Create a secure StudentIQ account</p>
-
-                <div className="signin-card card">
+        <AuthLayout title="Create your account" subtitle="Get started with StudentIQ">
+            <Card>
+                <div className="space-y-5">
                     {isDemoMode && (
-                        <div className="demo-hint">
-                            <span className="demo-hint-icon"><svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
-                            <div>
-                                <div className="demo-hint-title">Demo Mode</div>
-                                <div className="demo-hint-text">
-                                    Your profile is stored locally. Use a password of 4+ characters.
-                                </div>
-                            </div>
-                        </div>
+                        <Alert variant="info" title="Demo mode">
+                            Your profile is stored locally. Use a password of 4+ characters.
+                        </Alert>
                     )}
 
-                    <form onSubmit={handleSubmit} className="signin-form">
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="reg-first">First name</label>
-                            <div className="input-with-icon">
-                                <input
-                                    id="reg-first"
-                                    type="text"
-                                    className="form-input"
-                                    value={firstName}
-                                    onChange={(e) => setFirstName(e.target.value)}
-                                    placeholder="Jane"
-                                    required
-                                    autoComplete="given-name"
-                                />
-                            </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Input label="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required autoComplete="given-name" />
+                            <Input label="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} required autoComplete="family-name" />
                         </div>
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="reg-last">Last name</label>
-                            <div className="input-with-icon">
-                                <input
-                                    id="reg-last"
-                                    type="text"
-                                    className="form-input"
-                                    value={lastName}
-                                    onChange={(e) => setLastName(e.target.value)}
-                                    placeholder="Doe"
-                                    required
-                                    autoComplete="family-name"
-                                />
-                            </div>
-                        </div>
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="reg-role">Account type</label>
-                            <select
-                                id="reg-role"
-                                className="form-input"
-                                value={role}
-                                onChange={(e) => setRole(e.target.value as 'student' | 'teacher')}
+                        <Select label="Account type" value={role} onChange={(e) => setRole(e.target.value as 'student' | 'teacher')} required>
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                        </Select>
+                        <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+                        <div>
+                            <Input
+                                label="Password"
+                                type={showPass ? 'text' : 'password'}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 required
+                                minLength={isDemoMode ? 4 : 6}
+                                autoComplete="new-password"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPass(!showPass)}
+                                className="mt-2 text-xs text-neutral-500 transition-colors hover:text-neutral-300"
                             >
-                                <option value="student">Student</option>
-                                <option value="teacher">Teacher</option>
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="reg-email">Email address</label>
-                            <div className="input-with-icon">
-                                <input
-                                    id="reg-email"
-                                    type="email"
-                                    className="form-input"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="you@school.edu"
-                                    required
-                                    autoComplete="email"
-                                />
-                            </div>
-                        </div>
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="reg-password">Password</label>
-                            <div className="input-with-icon">
-                                <input
-                                    id="reg-password"
-                                    type={showPass ? 'text' : 'password'}
-                                    className="form-input"
-                                    style={{ paddingRight: 40 }}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Choose a password"
-                                    required
-                                    autoComplete="new-password"
-                                    minLength={isDemoMode ? 4 : 6}
-                                />
-                                <button
-                                    type="button"
-                                    className="pass-toggle"
-                                    onClick={() => setShowPass(!showPass)}
-                                    tabIndex={-1}
-                                >
-                                    {showPass ? 'Hide' : 'Show'}
-                                </button>
-                            </div>
+                                {showPass ? 'Hide' : 'Show'} password
+                            </button>
                         </div>
 
-                        {error && <div className="signin-error">{error}</div>}
+                        {error && <Alert variant="error">{error}</Alert>}
 
-                        <button
-                            type="submit"
-                            className="btn btn-primary signin-btn"
-                            disabled={isLoading}
-                            id="register-btn"
-                        >
-                            {isLoading ? <span className="pulse">Creating account…</span> : 'Create account'}
-                        </button>
-                        <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading ? 'Creating account…' : 'Create account'}
+                        </Button>
+
+                        <p className="text-center text-xs text-neutral-600">
                             Teacher sign-up works only for emails configured by the admin.
                         </p>
-                        <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+                        <p className="text-center text-sm text-neutral-500">
                             Already have an account?{' '}
-                            <Link to="/sign-in" style={{ color: 'var(--accent-purple-light)', fontWeight: 600 }}>
+                            <Link to="/sign-in" className="font-medium text-white transition-colors hover:text-red-400">
                                 Sign in
                             </Link>
                         </p>
                     </form>
                 </div>
-            </div>
-        </div>
+            </Card>
+        </AuthLayout>
     );
 }

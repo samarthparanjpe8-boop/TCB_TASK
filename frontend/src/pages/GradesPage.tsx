@@ -1,7 +1,16 @@
-// src/pages/GradesPage.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Modal } from '../components/Modal';
+import { Modal } from '../components/ui/Modal';
+import { PageHeader } from '../components/PageHeader';
+import { Card } from '../components/ui/Card';
+import { Badge, GradeBadge } from '../components/ui/Badge';
+import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
+import { Button } from '../components/ui/Button';
+import { Avatar } from '../components/ui/Avatar';
+import { Spinner } from '../components/ui/Spinner';
+import { EmptyState } from '../components/ui/EmptyState';
+import { TableScroll } from '../components/ui/Table';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { api, isDemoMode } from '../lib/api';
@@ -48,11 +57,9 @@ export function GradesPage() {
                     })
                 );
                 setGrades(gradeGroups.flat());
-
                 if (isTeacher) {
                     const { data: studentData } = await api.get<Student[]>('/students');
                     setStudents(studentData);
-                    return;
                 }
             } catch {
                 showToast('Failed to load grades', 'error');
@@ -63,30 +70,35 @@ export function GradesPage() {
         load();
     }, [isTeacher, showToast]);
 
-    const displayedGrades = selectedCourse === 'all'
-        ? grades
-        : grades.filter((g) => g.courseId === selectedCourse);
+    const displayedGrades = selectedCourse === 'all' ? grades : grades.filter((g) => g.courseId === selectedCourse);
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (selectedCourse === 'all') { showToast('Select a course first', 'error'); return; }
+        if (selectedCourse === 'all') {
+            showToast('Select a course first', 'error');
+            return;
+        }
         const score = Number(form.score);
         const maxScore = Number(form.maxScore);
         try {
             if (isDemoMode) {
                 const newG: Grade = {
-                    id: `grd-${Date.now()}`, courseId: selectedCourse, studentId: form.studentId,
-                    assignmentName: form.assignmentName, score, maxScore,
+                    id: `grd-${Date.now()}`,
+                    courseId: selectedCourse,
+                    studentId: form.studentId,
+                    assignmentName: form.assignmentName,
+                    score,
+                    maxScore,
                 };
                 localGrades.push(newG);
                 setGrades([...localGrades]);
             } else {
-                // Backend requires active enrollment before allowing grade creation.
-                await api.post(`/courses/${selectedCourse}/enrollments`, {
-                    studentId: form.studentId,
-                });
+                await api.post(`/courses/${selectedCourse}/enrollments`, { studentId: form.studentId });
                 const { data } = await api.post<Grade>(`/courses/${selectedCourse}/grades`, {
-                    studentId: form.studentId, assignmentName: form.assignmentName, score, maxScore,
+                    studentId: form.studentId,
+                    assignmentName: form.assignmentName,
+                    score,
+                    maxScore,
                 });
                 setGrades((prev) => [data, ...prev]);
             }
@@ -104,17 +116,25 @@ export function GradesPage() {
         const score = Number(form.score);
         try {
             if (isDemoMode) {
-                localGrades = localGrades.map((g) => g.id === editGrade.id ? { ...g, assignmentName: form.assignmentName, score, maxScore: Number(form.maxScore) } : g);
+                localGrades = localGrades.map((g) =>
+                    g.id === editGrade.id ? { ...g, assignmentName: form.assignmentName, score, maxScore: Number(form.maxScore) } : g
+                );
                 setGrades([...localGrades]);
             } else {
                 await api.patch(`/courses/${editGrade.courseId}/grades/${editGrade.id}`, {
-                    assignmentName: form.assignmentName, score, maxScore: Number(form.maxScore),
+                    assignmentName: form.assignmentName,
+                    score,
+                    maxScore: Number(form.maxScore),
                 });
-                setGrades((prev) => prev.map((g) => g.id === editGrade.id ? { ...g, ...form, score, maxScore: Number(form.maxScore) } : g));
+                setGrades((prev) =>
+                    prev.map((g) => (g.id === editGrade.id ? { ...g, assignmentName: form.assignmentName, score, maxScore: Number(form.maxScore) } : g))
+                );
             }
             showToast('Grade updated');
             setEditGrade(null);
-        } catch { showToast('Failed to update grade', 'error'); }
+        } catch {
+            showToast('Failed to update grade', 'error');
+        }
     };
 
     const handleDelete = async () => {
@@ -129,7 +149,9 @@ export function GradesPage() {
             }
             showToast('Grade deleted', 'info');
             setDeleteGrade(null);
-        } catch { showToast('Failed to delete grade', 'error'); }
+        } catch {
+            showToast('Failed to delete grade', 'error');
+        }
     };
 
     const getStudentName = (id: string) => students.find((s) => s.id === id)?.displayName || id;
@@ -137,78 +159,91 @@ export function GradesPage() {
 
     return (
         <div>
-            <div className="page-header">
-                <h1>Grades</h1>
-                <p>Track and manage student grade records.</p>
-            </div>
+            <PageHeader
+                title="Grades"
+                description="Track and manage student grade records."
+                action={
+                    isTeacher ? (
+                        <Button size="sm" onClick={() => { setForm({ studentId: '', assignmentName: '', score: '', maxScore: '100' }); setAddOpen(true); }}>
+                            Record grade
+                        </Button>
+                    ) : undefined
+                }
+            />
 
-            <div className="card">
-                <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <select
-                        className="form-input"
-                        style={{ maxWidth: 240 }}
-                        value={selectedCourse}
-                        onChange={(e) => setSelectedCourse(e.target.value)}
-                    >
-                        <option value="all">All Courses</option>
-                        {courses.map((c) => <option key={c.id} value={c.id}>{c.title} ({c.code})</option>)}
-                    </select>
-                    {isTeacher && (
-                        <button
-                            className="btn btn-primary btn-sm"
-                            style={{ marginLeft: 'auto' }}
-                            onClick={() => { setForm({ studentId: '', assignmentName: '', score: '', maxScore: '100' }); setAddOpen(true); }}
-                        >
-                            + Record Grade
-                        </button>
-                    )}
+            <Card>
+                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                    <Select value={selectedCourse} onChange={(e) => setSelectedCourse(e.target.value)} className="w-full sm:max-w-xs">
+                        <option value="all">All courses</option>
+                        {courses.map((c) => (
+                            <option key={c.id} value={c.id}>
+                                {c.title} ({c.code})
+                            </option>
+                        ))}
+                    </Select>
                 </div>
 
                 {loading ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><div className="spinner" /></div>
-                ) : displayedGrades.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-state-icon" style={{ display: 'flex', justifyContent: 'center' }}>
-                            <svg width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ opacity: 0.5 }}><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-                        </div>
-                        <h3>No grades recorded</h3>
-                        <p>Select a course and record grades.</p>
+                    <div className="flex justify-center py-16">
+                        <Spinner size="lg" />
                     </div>
+                ) : displayedGrades.length === 0 ? (
+                    <EmptyState title="No grades recorded" description="Select a course and record grades." />
                 ) : (
-                    <div className="table-wrapper">
-                        <table className="data-table">
+                    <TableScroll>
+                        <table className="w-full text-sm">
                             <thead>
-                                <tr>
-                                    <th>Student</th>
-                                    <th>Course</th>
-                                    <th>Assignment</th>
-                                    <th>Score</th>
-                                    <th>Grade</th>
-                                    {isTeacher && <th>Actions</th>}
+                                <tr className="border-b border-neutral-800 text-left text-xs uppercase tracking-wider text-neutral-500">
+                                    <th className="pb-3 font-medium">Student</th>
+                                    <th className="pb-3 font-medium">Course</th>
+                                    <th className="pb-3 font-medium">Assignment</th>
+                                    <th className="pb-3 font-medium">Score</th>
+                                    <th className="pb-3 font-medium">Grade</th>
+                                    {isTeacher && <th className="pb-3 font-medium text-right">Actions</th>}
                                 </tr>
                             </thead>
                             <tbody>
                                 {displayedGrades.map((g) => {
                                     const letter = getLetterGrade(g.score, g.maxScore);
                                     return (
-                                        <tr key={g.id}>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <div className="avatar" style={{ background: 'var(--accent-blue)', color: '#fff', width: 28, height: 28, fontSize: '0.75rem' }}>
-                                                        {getStudentName(g.studentId)[0]}
-                                                    </div>
-                                                    <span style={{ fontWeight: 500, fontSize: '0.875rem' }}>{getStudentName(g.studentId)}</span>
+                                        <tr key={g.id} className="border-b border-neutral-800/50 hover:bg-white/[0.02]">
+                                            <td className="py-3.5">
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar name={getStudentName(g.studentId)} className="h-7 w-7 text-[10px]" />
+                                                    <span className="font-medium text-white">{getStudentName(g.studentId)}</span>
                                                 </div>
                                             </td>
-                                            <td><span className="badge" style={{ background: 'rgba(124,58,237,0.12)', color: 'var(--accent-purple-light)' }}>{getCourseName(g.courseId)}</span></td>
-                                            <td style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{g.assignmentName}</td>
-                                            <td style={{ fontWeight: 600 }}>{g.score}/{g.maxScore}</td>
-                                            <td><span className={`badge badge-${letter}`}>{letter}</span></td>
+                                            <td className="py-3.5">
+                                                <Badge variant="accent">{getCourseName(g.courseId)}</Badge>
+                                            </td>
+                                            <td className="py-3.5 text-neutral-500">{g.assignmentName}</td>
+                                            <td className="py-3.5 font-medium tabular-nums">
+                                                {g.score}/{g.maxScore}
+                                            </td>
+                                            <td className="py-3.5">
+                                                <GradeBadge letter={letter} />
+                                            </td>
                                             {isTeacher && (
-                                                <td>
-                                                    <div style={{ display: 'flex', gap: 6 }}>
-                                                        <button className="btn btn-ghost btn-sm" onClick={() => { setEditGrade(g); setForm({ studentId: g.studentId, assignmentName: g.assignmentName, score: String(g.score), maxScore: String(g.maxScore) }); }}><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-                                                        <button className="btn btn-danger btn-sm" onClick={() => setDeleteGrade(g)}><svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                                                <td className="py-3.5">
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setEditGrade(g);
+                                                                setForm({
+                                                                    studentId: g.studentId,
+                                                                    assignmentName: g.assignmentName,
+                                                                    score: String(g.score),
+                                                                    maxScore: String(g.maxScore),
+                                                                });
+                                                            }}
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                        <Button variant="danger" size="sm" onClick={() => setDeleteGrade(g)}>
+                                                            Delete
+                                                        </Button>
                                                     </div>
                                                 </td>
                                             )}
@@ -217,79 +252,61 @@ export function GradesPage() {
                                 })}
                             </tbody>
                         </table>
-                    </div>
+                    </TableScroll>
                 )}
-            </div>
+            </Card>
 
-            {/* Add Grade Modal */}
-            <Modal isOpen={isTeacher && addOpen} onClose={() => setAddOpen(false)} title="Record Grade">
-                <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <Modal isOpen={isTeacher && addOpen} onClose={() => setAddOpen(false)} title="Record grade">
+                <form onSubmit={handleAdd} className="space-y-4">
                     {selectedCourse === 'all' && (
-                        <div className="form-group">
-                            <label className="form-label">Course *</label>
-                            <select className="form-input" onChange={(e) => setSelectedCourse(e.target.value)} required>
-                                <option value="">Select course</option>
-                                {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-                            </select>
-                        </div>
+                        <Select label="Course" onChange={(e) => setSelectedCourse(e.target.value)} required>
+                            <option value="">Select course</option>
+                            {courses.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                    {c.title}
+                                </option>
+                            ))}
+                        </Select>
                     )}
-                    <div className="form-group">
-                        <label className="form-label">Student *</label>
-                        <select className="form-input" value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} required>
-                            <option value="">Select student</option>
-                            {students.map((s) => <option key={s.id} value={s.id}>{s.displayName}</option>)}
-                        </select>
+                    <Select label="Student" value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} required>
+                        <option value="">Select student</option>
+                        {students.map((s) => (
+                            <option key={s.id} value={s.id}>
+                                {s.displayName}
+                            </option>
+                        ))}
+                    </Select>
+                    <Input label="Assignment" value={form.assignmentName} onChange={(e) => setForm({ ...form, assignmentName: e.target.value })} required placeholder="Midterm exam" />
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input label="Score" type="number" min={0} max={form.maxScore} value={form.score} onChange={(e) => setForm({ ...form, score: e.target.value })} required />
+                        <Input label="Max score" type="number" min={1} value={form.maxScore} onChange={(e) => setForm({ ...form, maxScore: e.target.value })} />
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">Assignment Name *</label>
-                        <input className="form-input" value={form.assignmentName} onChange={(e) => setForm({ ...form, assignmentName: e.target.value })} required placeholder="e.g. Midterm Exam" />
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div className="form-group">
-                            <label className="form-label">Score *</label>
-                            <input className="form-input" type="number" min="0" max={form.maxScore} value={form.score} onChange={(e) => setForm({ ...form, score: e.target.value })} required />
-                        </div>
-                        <div className="form-group">
-                            <label className="form-label">Max Score</label>
-                            <input className="form-input" type="number" min="1" value={form.maxScore} onChange={(e) => setForm({ ...form, maxScore: e.target.value })} />
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                        <button type="button" className="btn btn-outline btn-sm" onClick={() => setAddOpen(false)}>Cancel</button>
-                        <button type="submit" className="btn btn-primary btn-sm">Record Grade</button>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => setAddOpen(false)}>Cancel</Button>
+                        <Button type="submit" size="sm">Record</Button>
                     </div>
                 </form>
             </Modal>
 
-            {/* Edit Modal */}
-            <Modal isOpen={isTeacher && !!editGrade} onClose={() => setEditGrade(null)} title="Edit Grade">
-                <form onSubmit={handleEdit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    <div className="form-group">
-                        <label className="form-label">Assignment Name</label>
-                        <input className="form-input" value={form.assignmentName} onChange={(e) => setForm({ ...form, assignmentName: e.target.value })} required />
+            <Modal isOpen={isTeacher && !!editGrade} onClose={() => setEditGrade(null)} title="Edit grade">
+                <form onSubmit={handleEdit} className="space-y-4">
+                    <Input label="Assignment" value={form.assignmentName} onChange={(e) => setForm({ ...form, assignmentName: e.target.value })} required />
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input label="Score" type="number" min={0} value={form.score} onChange={(e) => setForm({ ...form, score: e.target.value })} required />
+                        <Input label="Max score" type="number" min={1} value={form.maxScore} onChange={(e) => setForm({ ...form, maxScore: e.target.value })} />
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div className="form-group">
-                            <label className="form-label">Score</label>
-                            <input className="form-input" type="number" min="0" value={form.score} onChange={(e) => setForm({ ...form, score: e.target.value })} required />
-                        </div>
-                        <div className="form-group">
-                            <label className="form-label">Max Score</label>
-                            <input className="form-input" type="number" min="1" value={form.maxScore} onChange={(e) => setForm({ ...form, maxScore: e.target.value })} />
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                        <button type="button" className="btn btn-outline btn-sm" onClick={() => setEditGrade(null)}>Cancel</button>
-                        <button type="submit" className="btn btn-primary btn-sm">Save</button>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => setEditGrade(null)}>Cancel</Button>
+                        <Button type="submit" size="sm">Save</Button>
                     </div>
                 </form>
             </Modal>
 
-            <Modal isOpen={isTeacher && !!deleteGrade} onClose={() => setDeleteGrade(null)} title="Delete Grade" width={400}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: 20 }}>Delete this grade entry? This cannot be undone.</p>
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                    <button className="btn btn-outline btn-sm" onClick={() => setDeleteGrade(null)}>Cancel</button>
-                    <button className="btn btn-danger btn-sm" onClick={handleDelete}>Delete</button>
+            <Modal isOpen={isTeacher && !!deleteGrade} onClose={() => setDeleteGrade(null)} title="Delete grade" width="sm">
+                <p className="mb-6 text-sm text-neutral-500">Delete this grade entry? This cannot be undone.</p>
+                <div className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setDeleteGrade(null)}>Cancel</Button>
+                    <Button size="sm" onClick={handleDelete}>Delete</Button>
                 </div>
             </Modal>
         </div>
