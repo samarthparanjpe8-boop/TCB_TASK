@@ -7,7 +7,7 @@ import { Grade } from "../models/Grade.js";
 import { Attendance } from "../models/Attendance.js";
 import { parseObjectId } from "../lib/mongoId.js";
 import { HttpError } from "../lib/httpErrors.js";
-import { getCourseForTeacherOrThrow, assertStudentCanViewCourse } from "../services/courseAccess.js";
+import { getCourseOrThrow, assertStudentCanViewCourse } from "../services/courseAccess.js";
 
 export const coursesRouter = Router();
 
